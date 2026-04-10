@@ -19,10 +19,7 @@ config.transformer = {
       ascii_only: false,
       comments: false,
     },
-    compress: {
-      // Prevent unsafe string transformations
-      unicode_regex: false,
-    },
+    compress: {},
   },
 };
 
