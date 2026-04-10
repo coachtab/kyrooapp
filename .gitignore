@@ -2,6 +2,10 @@
 *.env
 !*.env.example
 
+# Ignore installed dependencies
+node_modules/
+**/node_modules/
+
 # Ignore local configuration
 .DS_Store
 Thumbs.db
