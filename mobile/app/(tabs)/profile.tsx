@@ -127,7 +127,7 @@ export default function ProfileTab() {
   ];
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         {/* Avatar */}
         <View style={s.avatarWrap}>

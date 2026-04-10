@@ -86,13 +86,15 @@ export default function PlansTab() {
       })();
 
   if (loading) return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
-      <ActivityIndicator color={colors.accent} size="large" />
-    </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
+    </SafeAreaView>
   );
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={s.header}>
         <Text style={s.title}>

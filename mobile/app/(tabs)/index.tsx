@@ -32,9 +32,11 @@ export default function HomeTab() {
   const moods = ['😴', '😐', '🙂', '😄', '🔥'];
 
   if (loading) return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
-      <ActivityIndicator color={colors.accent} size="large" />
-    </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
+    </SafeAreaView>
   );
 
   const greeting = () => {
@@ -45,7 +47,7 @@ export default function HomeTab() {
   };
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={s.header}>

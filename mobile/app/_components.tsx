@@ -4,7 +4,11 @@ import { useT } from '@/i18n';
 import type { ProgramStatus } from '@/api';
 
 export function BackArrow() {
-  return <Text style={{ fontSize: 22, color: colors.text, lineHeight: 26 }}>‹</Text>;
+  return (
+    <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: 22, color: colors.text, lineHeight: 26 }}>‹</Text>
+    </View>
+  );
 }
 
 export function Divider({ label }: { label: string }) {

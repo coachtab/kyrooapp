@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
@@ -29,6 +29,7 @@ export default function Login() {
 
   return (
     <SafeAreaView style={s.safe}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()}><BackArrow /></TouchableOpacity>
@@ -61,6 +62,7 @@ export default function Login() {
           <Text style={s.link} onPress={() => router.push('/register')}>{tr('login_register')}</Text>
         </Text>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

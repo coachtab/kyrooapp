@@ -43,9 +43,11 @@ export default function TrackingTab() {
   };
 
   if (loading) return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
-      <ActivityIndicator color={colors.accent} size="large" />
-    </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
+    </SafeAreaView>
   );
 
   const doneHabits  = data?.habits.filter(h => h.completed).length ?? 0;
@@ -54,7 +56,7 @@ export default function TrackingTab() {
   const locale      = lang === 'de' ? 'de-DE' : 'en-US';
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <Text style={s.title}>{tr('track_title')} <Text style={s.accent}>{tr('track_accent')}</Text></Text>
         <Text style={s.date}>{new Date().toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}</Text>

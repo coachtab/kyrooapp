@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/api';
@@ -19,6 +19,7 @@ export default function Reset() {
 
   return (
     <SafeAreaView style={s.safe}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()}><BackArrow /></TouchableOpacity>
@@ -31,6 +32,7 @@ export default function Reset() {
           <Text style={s.ctaText}>{loading ? 'Sending…' : 'Send Reset Link'}</Text>
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

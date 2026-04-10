@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/api';
 import { colors } from '@/theme';
+import { useT } from '@/i18n';
 import { BackArrow, Divider } from './_components';
 
 export default function Register() {
   const router = useRouter();
   const { login } = useAuth();
+  const { tr } = useT();
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState('');
@@ -27,36 +29,38 @@ export default function Register() {
 
   return (
     <SafeAreaView style={s.safe}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()}><BackArrow /></TouchableOpacity>
-          <Text style={s.title}>Sign Up</Text>
+          <Text style={s.title}>{tr('register_title')}</Text>
         </View>
-        <Divider label="With a mail address" />
+        <Divider label={tr('register_divider')} />
         <View style={s.form}>
           <View>
-            <Text style={s.label}>Email Address</Text>
-            <TextInput style={s.input} placeholder="Email Address" placeholderTextColor={colors.muted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+            <Text style={s.label}>{tr('register_email')}</Text>
+            <TextInput style={s.input} placeholder={tr('register_email')} placeholderTextColor={colors.muted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
           </View>
           <View>
-            <Text style={s.label}>Password</Text>
-            <TextInput style={s.input} placeholder="Choose a password (min. 6 chars)" placeholderTextColor={colors.muted} value={password} onChangeText={setPassword} secureTextEntry onSubmitEditing={submit} />
+            <Text style={s.label}>{tr('register_password')}</Text>
+            <TextInput style={s.input} placeholder={tr('register_ph_pass')} placeholderTextColor={colors.muted} value={password} onChangeText={setPassword} secureTextEntry onSubmitEditing={submit} />
           </View>
           {error ? <Text style={s.error}>{error}</Text> : null}
           <TouchableOpacity style={[s.cta, loading && s.disabled]} onPress={submit} disabled={loading}>
-            <Text style={s.ctaText}>{loading ? 'Creating account…' : 'Continue'}</Text>
+            <Text style={s.ctaText}>{loading ? tr('register_loading') : tr('register_submit')}</Text>
           </TouchableOpacity>
         </View>
-        <Text style={s.legal}>By continuing, you agree to Kyroo's Privacy Policy and Terms and Conditions</Text>
+        <Text style={s.legal}>{tr('register_legal')}</Text>
         <Divider label="or" />
         <View style={s.socials}>
-          <TouchableOpacity style={s.social}><Text style={s.socialText}>Continue with Apple</Text></TouchableOpacity>
-          <TouchableOpacity style={s.social}><Text style={s.socialText}>Continue with Google</Text></TouchableOpacity>
+          <TouchableOpacity style={s.social}><Text style={s.socialText}>{tr('register_apple')}</Text></TouchableOpacity>
+          <TouchableOpacity style={s.social}><Text style={s.socialText}>{tr('register_google')}</Text></TouchableOpacity>
         </View>
-        <Text style={s.footer}>Already have an account?{'  '}
-          <Text style={s.link} onPress={() => router.push('/login')}>Login</Text>
+        <Text style={s.footer}>{tr('register_footer')}{'  '}
+          <Text style={s.link} onPress={() => router.push('/login')}>{tr('register_login')}</Text>
         </Text>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
