@@ -16,3 +16,6 @@ logs
 
 # Ignore OS files
 .vscode/
+
+# Keep deployment docs local only
+DEPLOYMENT.md
