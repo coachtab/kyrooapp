@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -34,95 +34,79 @@ export default function HomeTab() {
 
   useFocusEffect(load);
 
-  const greeting = () => {
-    const h = new Date().getHours();
-    if (h < 12) return tr('home_morning');
-    if (h < 18) return tr('home_afternoon');
-    return tr('home_evening');
-  };
-
   if (loading) return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+    <SafeAreaView style={s.safe} edges={['top']}>
+      <View style={s.center}>
         <ActivityIndicator color={colors.accent} size="large" />
       </View>
     </SafeAreaView>
   );
 
-  const doneHabits  = data?.habits.filter(h => h.completed).length ?? 0;
-  const totalHabits = data?.habits.length ?? 0;
+  const firstName = user?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'Athlete';
 
   return (
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Header */}
-        <View style={s.header}>
-          <View>
-            <Text style={s.greeting}>{greeting()},</Text>
-            <Text style={s.name}>{user?.name || user?.email?.split('@')[0] || 'Athlete'} 👋</Text>
-          </View>
-          <View style={s.streakBadge}>
-            <Text style={s.streakNum}>{data?.streak ?? 0}</Text>
-            <Text style={s.streakLabel}>{tr('home_streak')}</Text>
-          </View>
+        {/* Greeting — Ochy-style centered, bold, accent name */}
+        <View style={s.greetingBlock}>
+          <Text style={s.greeting}>
+            Hi, <Text style={s.greetingAccent}>{firstName}</Text>!
+          </Text>
+          <Text style={s.wave}>👋</Text>
         </View>
 
-        {/* Today's Workout */}
+        {/* Streak strip */}
+        <View style={s.streakStrip}>
+          <Ionicons name="flame" size={18} color={colors.accent} />
+          <Text style={s.streakText}>
+            <Text style={s.streakNum}>{data?.streak ?? 0}</Text> day streak
+          </Text>
+        </View>
+
+        {/* Today's workout */}
         {data?.workout ? (
-          <View style={s.card}>
-            <View style={s.cardRow}>
-              <Text style={s.cardLabel}>{tr('home_today_label')}</Text>
-              {data.program && (
-                <Text style={s.cardMeta}>Week {data.program.week} · Day {data.program.day}</Text>
-              )}
-            </View>
-            <Text style={s.cardTitle}>{data.workout.name}</Text>
-            <View style={s.exercises}>
-              {data.workout.exercises.slice(0, 5).map((ex, i) => (
+          <>
+            <Text style={s.sectionTitle}>
+              Today's <Text style={s.sectionAccent}>workout</Text>
+            </Text>
+            {data.program && (
+              <Text style={s.meta}>
+                {data.program.name} · Week {data.program.week}, Day {data.program.day}
+              </Text>
+            )}
+
+            <Text style={s.workoutName}>{data.workout.name}</Text>
+
+            <View style={s.exerciseList}>
+              {data.workout.exercises.map((ex, i) => (
                 <View key={i} style={s.exRow}>
-                  <View style={s.exNum}><Text style={s.exNumText}>{i + 1}</Text></View>
                   <Text style={s.exName}>{ex.name}</Text>
                   <Text style={s.exDetail}>{ex.sets} × {ex.reps}</Text>
+                  <Ionicons name="chevron-forward" size={14} color={colors.border} />
                 </View>
               ))}
-              {data.workout.exercises.length > 5 && (
-                <Text style={s.more}>+{data.workout.exercises.length - 5} more exercises</Text>
-              )}
             </View>
-            <TouchableOpacity style={s.cta} onPress={() => router.push('/program')}>
-              <Ionicons name="play" size={16} color={colors.ctaText} style={{ marginRight: 6 }} />
-              <Text style={s.ctaText}>{tr('home_view_prog')}</Text>
+
+            <TouchableOpacity style={s.cta} onPress={() => router.push('/program')} activeOpacity={0.85}>
+              <Text style={s.ctaText}>View Program</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          /* Empty state — Ochy "Hi, it's Kyroo!" style */
+          <View style={s.emptyBlock}>
+            <Ionicons name="barbell-outline" size={56} color={colors.accent} style={{ opacity: 0.6, marginBottom: 20 }} />
+            <Text style={s.emptyTitle}>
+              Ready to <Text style={s.sectionAccent}>start</Text>?
+            </Text>
+            <Text style={s.emptySub}>
+              Pick a training plan and Kyroo builds{'\n'}your personalised program.
+            </Text>
+            <TouchableOpacity style={s.cta} onPress={() => router.push('/(tabs)/plans')} activeOpacity={0.85}>
+              <Text style={s.ctaText}>Browse Plans</Text>
             </TouchableOpacity>
           </View>
-        ) : (
-          <TouchableOpacity style={[s.card, s.emptyCard]} onPress={() => router.push('/(tabs)/plans')}>
-            <Ionicons name="barbell-outline" size={40} color={colors.muted} style={{ marginBottom: 12 }} />
-            <Text style={s.emptyTitle}>{tr('home_no_prog')}</Text>
-            <Text style={s.emptySub}>{tr('home_no_prog_sub')}</Text>
-            <View style={s.emptyBtn}>
-              <Text style={s.emptyBtnText}>Browse plans →</Text>
-            </View>
-          </TouchableOpacity>
         )}
-
-        {/* Daily summary strip */}
-        <View style={s.summaryRow}>
-          <View style={s.summaryCard}>
-            <Ionicons name="checkmark-circle-outline" size={20} color={colors.accent} />
-            <Text style={s.summaryNum}>{doneHabits}/{totalHabits}</Text>
-            <Text style={s.summaryLabel}>Habits</Text>
-          </View>
-          <View style={s.summaryCard}>
-            <Ionicons name="flame-outline" size={20} color={colors.accent} />
-            <Text style={s.summaryNum}>{data?.streak ?? 0}</Text>
-            <Text style={s.summaryLabel}>Day streak</Text>
-          </View>
-          <TouchableOpacity style={[s.summaryCard, s.summaryAction]} onPress={() => router.push('/(tabs)/tracking')}>
-            <Ionicons name="stats-chart-outline" size={20} color={colors.accent} />
-            <Text style={s.summaryLabel}>Track today</Text>
-          </TouchableOpacity>
-        </View>
 
       </ScrollView>
     </SafeAreaView>
@@ -130,41 +114,39 @@ export default function HomeTab() {
 }
 
 const s = StyleSheet.create({
-  safe:         { flex: 1, backgroundColor: colors.bg },
-  scroll:       { padding: 20, paddingBottom: 40 },
-  header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
-  greeting:     { fontSize: 14, color: colors.muted },
-  name:         { fontSize: 22, fontWeight: '800', color: colors.text, marginTop: 2 },
-  streakBadge:  { backgroundColor: colors.accent + '20', borderRadius: 12, padding: 10, alignItems: 'center', minWidth: 64 },
-  streakNum:    { fontSize: 22, fontWeight: '800', color: colors.accent },
-  streakLabel:  { fontSize: 10, color: colors.accent, fontWeight: '600' },
+  safe:   { flex: 1, backgroundColor: colors.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll: { paddingHorizontal: 28, paddingTop: 40, paddingBottom: 60 },
 
-  card:         { backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: colors.border },
-  cardRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  cardLabel:    { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, color: colors.muted },
-  cardMeta:     { fontSize: 11, color: colors.muted },
-  cardTitle:    { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 16 },
+  // Greeting
+  greetingBlock: { alignItems: 'center', marginBottom: 8 },
+  greeting:      { fontSize: 32, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  greetingAccent:{ color: colors.accent },
+  wave:          { fontSize: 32, marginTop: 8 },
 
-  exercises:    { gap: 10, marginBottom: 4 },
-  exRow:        { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  exNum:        { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.accent + '20', alignItems: 'center', justifyContent: 'center' },
-  exNumText:    { fontSize: 11, fontWeight: '700', color: colors.accent },
-  exName:       { flex: 1, fontSize: 14, color: colors.text },
-  exDetail:     { fontSize: 13, color: colors.muted },
-  more:         { fontSize: 13, color: colors.accent, marginTop: 4 },
+  // Streak
+  streakStrip:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 40 },
+  streakText:    { fontSize: 14, color: colors.muted },
+  streakNum:     { fontWeight: '800', color: colors.text },
 
-  cta:          { flexDirection: 'row', backgroundColor: colors.cta, borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', marginTop: 16 },
-  ctaText:      { fontSize: 15, fontWeight: '700', color: colors.ctaText },
+  // Section
+  sectionTitle:  { fontSize: 26, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: 4 },
+  sectionAccent: { color: colors.accent },
+  meta:          { fontSize: 13, color: colors.muted, textAlign: 'center', marginBottom: 20 },
+  workoutName:   { fontSize: 18, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 24 },
 
-  emptyCard:    { alignItems: 'center', paddingVertical: 36 },
-  emptyTitle:   { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 6 },
-  emptySub:     { fontSize: 14, color: colors.muted, marginBottom: 20, textAlign: 'center' },
-  emptyBtn:     { backgroundColor: colors.accent + '20', borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 },
-  emptyBtnText: { fontSize: 14, fontWeight: '600', color: colors.accent },
+  // Exercise list — Ochy clean rows
+  exerciseList:  { marginBottom: 12 },
+  exRow:         { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
+  exName:        { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500' },
+  exDetail:      { fontSize: 14, color: colors.muted, marginRight: 8 },
 
-  summaryRow:     { flexDirection: 'row', gap: 10 },
-  summaryCard:    { flex: 1, backgroundColor: colors.card, borderRadius: 16, padding: 14, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: colors.border },
-  summaryAction:  { borderColor: colors.accent + '40', backgroundColor: colors.accent + '08' },
-  summaryNum:     { fontSize: 18, fontWeight: '800', color: colors.text },
-  summaryLabel:   { fontSize: 11, color: colors.muted, fontWeight: '500' },
+  // CTA — Ochy-style full-width
+  cta:           { backgroundColor: colors.cta, borderRadius: 14, paddingVertical: 17, alignItems: 'center', marginTop: 24 },
+  ctaText:       { fontSize: 17, fontWeight: '700', color: colors.ctaText },
+
+  // Empty state
+  emptyBlock:    { alignItems: 'center', marginTop: 40 },
+  emptyTitle:    { fontSize: 28, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: 12 },
+  emptySub:      { fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 22, marginBottom: 8 },
 });

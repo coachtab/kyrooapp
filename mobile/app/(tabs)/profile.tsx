@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/api';
 import { colors } from '@/theme';
@@ -9,42 +10,6 @@ import { useT } from '@/i18n';
 import type { Lang } from '@/i18n/translations';
 import { ProgramCard } from '../_components';
 import type { ProgramSummary } from '../_components';
-
-// Render flag emoji using explicit Unicode scalar values so the Metro
-// minifier never collapses or mangles the surrogate pairs.
-// 🇬🇧 = Regional Indicator G (U+1F1EC) + Regional Indicator B (U+1F1E7)
-// 🇩🇪 = Regional Indicator D (U+1F1E9) + Regional Indicator E (U+1F1EA)
-const FLAG_GB = '\u{1F1EC}\u{1F1E7}'; // 🇬🇧
-const FLAG_DE = '\u{1F1E9}\u{1F1EA}'; // 🇩🇪
-
-// Fallback coloured badge shown when the device's emoji font does not
-// support Regional Indicator sequences (some older Android versions).
-function FlagIcon({ code }: { code: Lang }) {
-  // UK flag colour scheme: navy + red
-  // German flag colour scheme: black / red / gold
-  const stripes = code === 'en'
-    ? ['#012169', '#C8102E', '#FFFFFF']   // navy, red, white
-    : ['#000000', '#DD0000', '#FFCE00'];  // black, red, gold
-
-  return (
-    <View style={fi.wrap}>
-      {stripes.map((c, i) => (
-        <View key={i} style={[fi.stripe, { backgroundColor: c }]} />
-      ))}
-      <View style={fi.overlay}>
-        <Text style={fi.code}>{code.toUpperCase()}</Text>
-      </View>
-    </View>
-  );
-}
-
-const fi = StyleSheet.create({
-  wrap:    { width: 36, height: 24, borderRadius: 4, overflow: 'hidden' },
-  stripe:  { flex: 1 },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  code:    { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.5,
-             textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
-});
 
 export default function ProfileTab() {
   const router = useRouter();
@@ -95,9 +60,7 @@ export default function ProfileTab() {
     if (hasActive) {
       Alert.alert(
         prog.status === 'paused' ? tr('program_resume') : tr('program_activate'),
-        lang === 'de'
-          ? 'Dein aktuelles Programm wird pausiert.'
-          : 'Your current program will be paused.',
+        lang === 'de' ? 'Dein aktuelles Programm wird pausiert.' : 'Your current program will be paused.',
         [
           { text: tr('profile_cancel'), style: 'cancel' },
           { text: prog.status === 'paused' ? tr('program_resume') : tr('program_activate'), onPress: doActivate },
@@ -111,9 +74,7 @@ export default function ProfileTab() {
   const handleMarkDone = (prog: ProgramSummary) => {
     Alert.alert(
       tr('program_mark_done'),
-      lang === 'de'
-        ? 'Programm als abgeschlossen markieren?'
-        : 'Mark this program as completed?',
+      lang === 'de' ? 'Programm als abgeschlossen markieren?' : 'Mark this program as completed?',
       [
         { text: tr('profile_cancel'), style: 'cancel' },
         { text: tr('program_mark_done'), onPress: async () => {
@@ -126,25 +87,22 @@ export default function ProfileTab() {
   };
 
   const stats = user?.stats;
+  const firstName = user?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'K';
 
-  const LANGUAGES: { code: Lang; flag: string; label: string }[] = [
-    { code: 'en', flag: FLAG_GB, label: tr('profile_lang_en') },
-    { code: 'de', flag: FLAG_DE, label: tr('profile_lang_de') },
+  const LANGUAGES: { code: Lang; label: string }[] = [
+    { code: 'en', label: tr('profile_lang_en') },
+    { code: 'de', label: tr('profile_lang_de') },
   ];
 
   return (
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-        {/* Avatar */}
+
+        {/* Avatar — centered, Ochy style */}
         <View style={s.avatarWrap}>
           <View style={s.avatar}>
-            <Text style={s.avatarLetter}>{(user?.name || user?.email || 'K')[0].toUpperCase()}</Text>
+            <Text style={s.avatarLetter}>{firstName[0].toUpperCase()}</Text>
           </View>
-          {user?.is_premium && (
-            <View style={s.premiumBadge}>
-              <Text style={s.premiumText}>PRO</Text>
-            </View>
-          )}
         </View>
 
         {/* Name / edit */}
@@ -167,79 +125,60 @@ export default function ProfileTab() {
             <Text style={s.displayName}>{user?.name || tr('profile_tap_name')}</Text>
           </TouchableOpacity>
         )}
-
         <Text style={s.email}>{user?.email}</Text>
+        {user?.is_premium && <Text style={s.proBadge}>PRO</Text>}
 
         {/* Stats */}
         {stats && (
           <View style={s.statsRow}>
-            <View style={s.statCard}>
-              <Text style={s.statNum}>{stats.total_workouts}</Text>
-              <Text style={s.statLabel}>{tr('profile_workouts')}</Text>
-            </View>
-            <View style={s.statCard}>
-              <Text style={s.statNum}>{stats.streak}</Text>
-              <Text style={s.statLabel}>{tr('profile_streak')}</Text>
-            </View>
-            <View style={s.statCard}>
-              <Text style={s.statNum}>{stats.total_plans}</Text>
-              <Text style={s.statLabel}>{tr('profile_plans')}</Text>
-            </View>
+            <Stat num={stats.total_workouts} label={tr('profile_workouts')} />
+            <Stat num={stats.streak} label={tr('profile_streak')} />
+            <Stat num={stats.total_plans} label={tr('profile_plans')} />
           </View>
         )}
 
-        {/* My Programs */}
-        <View style={s.menu}>
-          <Text style={s.menuLabel}>{tr('profile_programs').toUpperCase()}</Text>
-          {programs.length === 0 ? (
-            <Text style={s.emptyPrograms}>{tr('profile_programs_empty')}</Text>
-          ) : (
-            programs.map(prog => (
+        {/* Programs */}
+        {programs.length > 0 && (
+          <>
+            <Text style={s.sectionTitle}>{tr('profile_programs').toUpperCase()}</Text>
+            {programs.map(prog => (
               <ProgramCard
                 key={prog.id}
                 program={prog}
                 onView={prog.status === 'active' ? () => router.push('/program') : undefined}
-                onActivate={prog.status !== 'active' && prog.status !== 'completed'
-                  ? () => handleActivate(prog) : undefined}
+                onActivate={prog.status !== 'active' && prog.status !== 'completed' ? () => handleActivate(prog) : undefined}
                 onMarkDone={prog.status === 'active' ? () => handleMarkDone(prog) : undefined}
               />
-            ))
-          )}
-        </View>
-
-        {/* Language switcher */}
-        <View style={s.menu}>
-          <Text style={s.menuLabel}>{tr('profile_language').toUpperCase()}</Text>
-          <View style={s.langRow}>
-            {LANGUAGES.map(l => (
-              <TouchableOpacity
-                key={l.code}
-                style={[s.langBtn, lang === l.code && s.langBtnActive]}
-                onPress={() => setLang(l.code)}
-              >
-                <FlagIcon code={l.code} />
-                <Text style={[s.langLabel, lang === l.code && s.langLabelActive]}>{l.label}</Text>
-                {lang === l.code && <View style={s.langCheck}><Text style={s.langCheckMark}>✓</Text></View>}
-              </TouchableOpacity>
             ))}
-          </View>
-        </View>
+          </>
+        )}
+
+        {/* Language — Ochy clean rows */}
+        <Text style={[s.sectionTitle, { marginTop: 28 }]}>{tr('profile_language').toUpperCase()}</Text>
+        {LANGUAGES.map(l => (
+          <TouchableOpacity
+            key={l.code}
+            style={s.menuRow}
+            onPress={() => setLang(l.code)}
+            activeOpacity={0.7}
+          >
+            <Text style={s.menuLabel}>{l.label}</Text>
+            {lang === l.code && <Ionicons name="checkmark" size={18} color={colors.accent} />}
+          </TouchableOpacity>
+        ))}
 
         {/* Account menu */}
-        <View style={s.menu}>
-          <Text style={s.menuLabel}>{tr('profile_account')}</Text>
-          <MenuItem icon="📧" label={tr('profile_email')} value={user?.email || ''} />
-          <MenuItem icon="⭐" label={tr('profile_plan')} value={user?.is_premium ? tr('profile_plan_pro') : tr('profile_plan_free')} accent={user?.is_premium} />
-          <MenuItem icon="🔔" label={tr('profile_notif')} onPress={() => {}} />
-          <MenuItem icon="🔒" label={tr('profile_privacy')} onPress={() => router.push('/privacy')} />
-        </View>
+        <Text style={[s.sectionTitle, { marginTop: 28 }]}>{tr('profile_account')}</Text>
+        <MenuRow icon="mail-outline" label={tr('profile_email')} value={user?.email || ''} />
+        <MenuRow icon="star-outline" label={tr('profile_plan')} value={user?.is_premium ? tr('profile_plan_pro') : tr('profile_plan_free')} accent={user?.is_premium} />
+        <MenuRow icon="notifications-outline" label={tr('profile_notif')} onPress={() => {}} />
+        <MenuRow icon="lock-closed-outline" label={tr('profile_privacy')} onPress={() => router.push('/privacy')} />
 
-        <View style={s.menu}>
-          <Text style={s.menuLabel}>{tr('profile_support')}</Text>
-          <MenuItem icon="❓" label={tr('profile_help')} onPress={() => router.push('/help')} />
-          <MenuItem icon="📝" label={tr('profile_terms')} onPress={() => router.push('/terms')} />
-        </View>
+        <Text style={[s.sectionTitle, { marginTop: 28 }]}>{tr('profile_support')}</Text>
+        <MenuRow icon="help-circle-outline" label={tr('profile_help')} onPress={() => router.push('/help')} />
+        <MenuRow icon="document-text-outline" label={tr('profile_terms')} onPress={() => router.push('/terms')} />
 
+        {/* Logout */}
         <TouchableOpacity style={s.logoutBtn} onPress={confirmLogout} activeOpacity={0.8}>
           <Text style={s.logoutText}>{tr('profile_logout')}</Text>
         </TouchableOpacity>
@@ -250,58 +189,65 @@ export default function ProfileTab() {
   );
 }
 
-function MenuItem({ icon, label, value, accent, onPress }: {
-  icon: string; label: string; value?: string; accent?: boolean; onPress?: () => void;
+function Stat({ num, label }: { num: number; label: string }) {
+  return (
+    <View style={s.statCard}>
+      <Text style={s.statNum}>{num}</Text>
+      <Text style={s.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function MenuRow({ icon, label, value, accent, onPress }: {
+  icon: React.ComponentProps<typeof Ionicons>['name']; label: string; value?: string; accent?: boolean; onPress?: () => void;
 }) {
   return (
-    <TouchableOpacity style={mi.row} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
-      <Text style={mi.icon}>{icon}</Text>
-      <Text style={mi.label}>{label}</Text>
+    <TouchableOpacity style={s.menuRow} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
+      <Ionicons name={icon} size={18} color={colors.muted} />
+      <Text style={s.menuLabel}>{label}</Text>
       <View style={{ flex: 1 }} />
-      {value && <Text style={[mi.value, accent && mi.valueAccent]}>{value}</Text>}
-      {onPress && <Text style={mi.arrow}>›</Text>}
+      {value && <Text style={[s.menuValue, accent && s.menuValueAccent]}>{value}</Text>}
+      {onPress && <Ionicons name="chevron-forward" size={16} color={colors.border} />}
     </TouchableOpacity>
   );
 }
 
-const mi = StyleSheet.create({
-  row:         { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 12 },
-  icon:        { fontSize: 18, width: 28 },
-  label:       { fontSize: 15, color: colors.text, fontWeight: '500' },
-  value:       { fontSize: 14, color: colors.muted },
-  valueAccent: { color: colors.accent, fontWeight: '600' },
-  arrow:       { fontSize: 20, color: colors.muted, marginLeft: 4 },
-});
-
 const s = StyleSheet.create({
   safe:          { flex: 1, backgroundColor: colors.bg },
-  scroll:        { padding: 24, paddingBottom: 48, alignItems: 'center' },
-  avatarWrap:    { position: 'relative', marginBottom: 16 },
-  avatar:        { width: 88, height: 88, borderRadius: 44, backgroundColor: colors.accent + '30', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.accent },
-  avatarLetter:  { fontSize: 36, fontWeight: '800', color: colors.accent },
-  premiumBadge:  { position: 'absolute', bottom: -4, right: -4, backgroundColor: colors.accent, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 },
-  premiumText:   { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 1 },
-  displayName:   { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 4, textAlign: 'center' },
-  email:         { fontSize: 14, color: colors.muted, marginBottom: 24 },
+  scroll:        { paddingHorizontal: 28, paddingTop: 40, paddingBottom: 60, alignItems: 'center' },
+
+  // Avatar
+  avatarWrap:    { marginBottom: 16 },
+  avatar:        { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.accent + '25', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.accent },
+  avatarLetter:  { fontSize: 32, fontWeight: '800', color: colors.accent },
+
+  // Name
+  displayName:   { fontSize: 24, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: 4 },
+  email:         { fontSize: 14, color: colors.muted, marginBottom: 4 },
+  proBadge:      { fontSize: 10, fontWeight: '800', color: colors.accent, letterSpacing: 1.5, marginBottom: 4 },
   editRow:       { flexDirection: 'row', gap: 10, marginBottom: 4, alignSelf: 'stretch' },
-  input:         { flex: 1, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, fontSize: 16, color: colors.text },
+  input:         { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, fontSize: 16, color: colors.text },
   saveBtn:       { backgroundColor: colors.cta, borderRadius: 12, paddingHorizontal: 20, justifyContent: 'center' },
-  saveBtnText:   { fontSize: 15, fontWeight: '700', color: colors.bg },
-  statsRow:      { flexDirection: 'row', gap: 10, marginBottom: 28, alignSelf: 'stretch' },
-  statCard:      { flex: 1, backgroundColor: colors.card, borderRadius: 16, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  statNum:       { fontSize: 24, fontWeight: '800', color: colors.text },
+  saveBtnText:   { fontSize: 15, fontWeight: '700', color: colors.ctaText },
+
+  // Stats
+  statsRow:      { flexDirection: 'row', gap: 10, marginTop: 20, marginBottom: 8, alignSelf: 'stretch' },
+  statCard:      { flex: 1, alignItems: 'center', paddingVertical: 12 },
+  statNum:       { fontSize: 22, fontWeight: '800', color: colors.text },
   statLabel:     { fontSize: 11, color: colors.muted, marginTop: 2 },
-  menu:          { alignSelf: 'stretch', marginBottom: 24 },
-  emptyPrograms: { fontSize: 13, color: colors.muted, textAlign: 'center', paddingVertical: 20 },
-  menuLabel:     { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, color: colors.muted, marginBottom: 8, marginLeft: 4 },
-  langRow:       { flexDirection: 'row', gap: 10 },
-  langBtn:       { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.border },
-  langBtnActive: { borderColor: colors.accent, backgroundColor: colors.accent + '15' },
-  langLabel:     { fontSize: 14, fontWeight: '600', color: colors.muted, flex: 1 },
-  langLabelActive:{ color: colors.text },
-  langCheck:     { width: 20, height: 20, borderRadius: 10, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
-  langCheckMark: { fontSize: 11, color: colors.bg, fontWeight: '800' },
-  logoutBtn:     { backgroundColor: colors.accent + '18', borderWidth: 1, borderColor: colors.accent + '60', borderRadius: 14, paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center', marginTop: 8 },
+
+  // Section
+  sectionTitle:  { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, color: colors.muted, alignSelf: 'flex-start', marginBottom: 8, marginTop: 8 },
+
+  // Menu row — Ochy list style
+  menuRow:       { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12, alignSelf: 'stretch' },
+  menuLabel:     { fontSize: 15, color: colors.text, fontWeight: '500' },
+  menuValue:     { fontSize: 13, color: colors.muted },
+  menuValueAccent:{ color: colors.accent, fontWeight: '600' },
+
+  // Logout
+  logoutBtn:     { borderWidth: 1, borderColor: colors.accent + '50', borderRadius: 14, paddingVertical: 15, alignSelf: 'stretch', alignItems: 'center', marginTop: 28 },
   logoutText:    { fontSize: 16, fontWeight: '700', color: colors.accent },
+
   version:       { fontSize: 12, color: colors.muted, marginTop: 20 },
 });

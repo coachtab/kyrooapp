@@ -47,52 +47,38 @@ export default function TrackingTab() {
   };
 
   if (loading) return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+    <SafeAreaView style={s.safe} edges={['top']}>
+      <View style={s.center}>
         <ActivityIndicator color={colors.accent} size="large" />
       </View>
     </SafeAreaView>
   );
 
-  const doneHabits  = data?.habits.filter(h => h.completed).length ?? 0;
-  const totalHabits = data?.habits.length ?? 0;
-  const progress    = totalHabits > 0 ? doneHabits / totalHabits : 0;
-  const locale      = lang === 'de' ? 'de-DE' : 'en-US';
-  const allDone     = totalHabits > 0 && doneHabits === totalHabits;
+  const locale     = lang === 'de' ? 'de-DE' : 'en-US';
+  const doneHabits = data?.habits.filter(h => h.completed).length ?? 0;
+  const total      = data?.habits.length ?? 0;
+  const progress   = total > 0 ? doneHabits / total : 0;
+  const allDone    = total > 0 && doneHabits === total;
 
   return (
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Header */}
+        {/* Header — Ochy centered bold */}
         <Text style={s.title}>
-          {tr('track_title')} <Text style={s.accent}>{tr('track_accent')}</Text>
+          Your <Text style={s.accent}>daily</Text> check-in
         </Text>
         <Text style={s.date}>
           {new Date().toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' })}
         </Text>
 
-        {/* Stats row */}
-        <View style={s.statsRow}>
-          <View style={s.statCard}>
-            <Ionicons name="flame" size={22} color={colors.accent} />
-            <Text style={s.statNum}>{data?.streak ?? 0}</Text>
-            <Text style={s.statLabel}>{tr('track_streak')}</Text>
-          </View>
-          <View style={s.statCard}>
-            <Ionicons name="checkmark-done" size={22} color={allDone ? colors.accent : colors.muted} />
-            <Text style={s.statNum}>{doneHabits}<Text style={s.statTotal}>/{totalHabits}</Text></Text>
-            <Text style={s.statLabel}>{tr('track_habits_done')}</Text>
-          </View>
-        </View>
-
         {/* Progress bar */}
-        {totalHabits > 0 && (
-          <View style={s.card}>
-            <View style={s.progressHeader}>
-              <Text style={s.cardLabel}>{tr('track_progress')}</Text>
-              <Text style={[s.progressPct, allDone && s.progressPctDone]}>
-                {allDone ? '🎉 All done!' : `${Math.round(progress * 100)}%`}
+        {total > 0 && (
+          <View style={s.progressBlock}>
+            <View style={s.progressRow}>
+              <Text style={s.progressLabel}>{doneHabits}/{total} habits</Text>
+              <Text style={[s.progressPct, allDone && s.progressDone]}>
+                {allDone ? 'All done!' : `${Math.round(progress * 100)}%`}
               </Text>
             </View>
             <View style={s.barTrack}>
@@ -101,42 +87,52 @@ export default function TrackingTab() {
           </View>
         )}
 
-        {/* Habits */}
-        <View style={s.card}>
-          <Text style={s.cardLabel}>{tr('track_habits')}</Text>
-          {totalHabits === 0 ? (
-            <Text style={s.empty}>No habits set up yet.</Text>
-          ) : (
-            <View style={s.habits}>
-              {data!.habits.map(h => (
-                <TouchableOpacity key={h.id} style={s.habitRow} onPress={() => toggleHabit(h.id)} activeOpacity={0.7}>
-                  <View style={[s.check, h.completed && s.checkDone]}>
-                    {h.completed && <Ionicons name="checkmark" size={14} color={colors.bg} />}
-                  </View>
-                  <Text style={[s.habitName, h.completed && s.habitDone]}>{h.name}</Text>
-                  {h.completed && <Ionicons name="checkmark-circle" size={16} color={colors.accent} style={{ opacity: 0.6 }} />}
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* Mood */}
-        <View style={s.card}>
-          <Text style={s.cardLabel}>{tr('track_mood_label')}</Text>
-          <View style={s.moods}>
-            {MOODS.map((m, i) => (
+        {/* Habits — Ochy clean list rows */}
+        {total > 0 && (
+          <>
+            <Text style={s.sectionTitle}>Habits</Text>
+            {data!.habits.map(h => (
               <TouchableOpacity
-                key={i}
-                style={[s.moodBtn, data?.mood === i && s.moodActive]}
-                onPress={() => saveMood(i)}
+                key={h.id}
+                style={s.habitRow}
+                onPress={() => toggleHabit(h.id)}
                 activeOpacity={0.7}
               >
-                <Text style={s.moodEmoji}>{m.emoji}</Text>
-                <Text style={[s.moodLabel, data?.mood === i && s.moodLabelActive]}>{m.label}</Text>
+                <View style={[s.check, h.completed && s.checkDone]}>
+                  {h.completed && <Ionicons name="checkmark" size={14} color={colors.bg} />}
+                </View>
+                <Text style={[s.habitName, h.completed && s.habitNameDone]}>{h.name}</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.border} />
               </TouchableOpacity>
             ))}
+          </>
+        )}
+
+        {total === 0 && (
+          <View style={s.emptyBlock}>
+            <Ionicons name="checkmark-done-outline" size={48} color={colors.muted} style={{ opacity: 0.5, marginBottom: 12 }} />
+            <Text style={s.emptyText}>No habits to track yet.</Text>
           </View>
+        )}
+
+        {/* Mood — Ochy style */}
+        <Text style={[s.sectionTitle, { marginTop: 32 }]}>
+          How are you <Text style={s.accent}>feeling</Text>?
+        </Text>
+        <View style={s.moods}>
+          {MOODS.map((m, i) => (
+            <TouchableOpacity
+              key={i}
+              style={[s.moodBtn, data?.mood === i && s.moodActive]}
+              onPress={() => saveMood(i)}
+              activeOpacity={0.7}
+            >
+              <Text style={s.moodEmoji}>{m.emoji}</Text>
+              <Text style={[s.moodLabel, data?.mood === i && s.moodLabelActive]}>
+                {m.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
       </ScrollView>
@@ -145,39 +141,43 @@ export default function TrackingTab() {
 }
 
 const s = StyleSheet.create({
-  safe:            { flex: 1, backgroundColor: colors.bg },
-  scroll:          { padding: 20, paddingBottom: 40 },
-  title:           { fontSize: 26, fontWeight: '800', color: colors.text },
-  accent:          { color: colors.accent },
-  date:            { fontSize: 14, color: colors.muted, marginTop: 4, marginBottom: 20 },
+  safe:   { flex: 1, backgroundColor: colors.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll: { paddingHorizontal: 28, paddingTop: 40, paddingBottom: 60 },
 
-  statsRow:        { flexDirection: 'row', gap: 12, marginBottom: 14 },
-  statCard:        { flex: 1, backgroundColor: colors.card, borderRadius: 16, padding: 16, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: colors.border },
-  statNum:         { fontSize: 28, fontWeight: '800', color: colors.text },
-  statTotal:       { fontSize: 18, fontWeight: '600', color: colors.muted },
-  statLabel:       { fontSize: 11, color: colors.muted },
+  // Header
+  title:  { fontSize: 28, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  accent: { color: colors.accent },
+  date:   { fontSize: 14, color: colors.muted, textAlign: 'center', marginTop: 6, marginBottom: 32 },
 
-  card:            { backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: colors.border },
-  cardLabel:       { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, color: colors.muted, marginBottom: 12 },
+  // Progress
+  progressBlock: { marginBottom: 32 },
+  progressRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  progressLabel: { fontSize: 13, color: colors.muted, fontWeight: '500' },
+  progressPct:   { fontSize: 13, fontWeight: '700', color: colors.accent },
+  progressDone:  { color: colors.accent },
+  barTrack:      { height: 6, backgroundColor: colors.card, borderRadius: 3, overflow: 'hidden' },
+  barFill:       { height: 6, backgroundColor: colors.cta, borderRadius: 3 },
 
-  progressHeader:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  progressPct:     { fontSize: 13, fontWeight: '700', color: colors.accent },
-  progressPctDone: { color: colors.accent },
-  barTrack:        { height: 10, backgroundColor: colors.card2, borderRadius: 5, overflow: 'hidden' },
-  barFill:         { height: 10, backgroundColor: colors.cta, borderRadius: 5 },
+  // Section
+  sectionTitle:  { fontSize: 13, fontWeight: '700', color: colors.muted, letterSpacing: 1, marginBottom: 12, textTransform: 'uppercase' },
 
-  habits:          { gap: 12 },
-  habitRow:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  check:           { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  checkDone:       { backgroundColor: colors.cta, borderColor: colors.cta },
-  habitName:       { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500' },
-  habitDone:       { textDecorationLine: 'line-through', color: colors.muted },
-  empty:           { fontSize: 14, color: colors.muted, textAlign: 'center', paddingVertical: 8 },
+  // Habits — Ochy list rows
+  habitRow:      { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 14 },
+  check:         { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  checkDone:     { backgroundColor: colors.cta, borderColor: colors.cta },
+  habitName:     { flex: 1, fontSize: 16, color: colors.text, fontWeight: '500' },
+  habitNameDone: { textDecorationLine: 'line-through', color: colors.muted },
 
-  moods:           { flexDirection: 'row', justifyContent: 'space-between' },
-  moodBtn:         { alignItems: 'center', gap: 5, padding: 10, borderRadius: 14, borderWidth: 1.5, borderColor: 'transparent', flex: 1, marginHorizontal: 2 },
-  moodActive:      { borderColor: colors.accent, backgroundColor: colors.accent + '15' },
-  moodEmoji:       { fontSize: 26 },
-  moodLabel:       { fontSize: 9, color: colors.muted, fontWeight: '500', textAlign: 'center' },
-  moodLabelActive: { color: colors.accent },
+  // Empty
+  emptyBlock:    { alignItems: 'center', marginTop: 24, marginBottom: 24 },
+  emptyText:     { fontSize: 15, color: colors.muted },
+
+  // Mood
+  moods:          { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  moodBtn:        { alignItems: 'center', gap: 6, paddingVertical: 12, paddingHorizontal: 4, borderRadius: 14, borderWidth: 1.5, borderColor: 'transparent', flex: 1 },
+  moodActive:     { borderColor: colors.accent, backgroundColor: colors.accent + '15' },
+  moodEmoji:      { fontSize: 28 },
+  moodLabel:      { fontSize: 10, color: colors.muted, fontWeight: '500' },
+  moodLabelActive:{ color: colors.accent, fontWeight: '700' },
 });
