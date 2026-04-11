@@ -47,13 +47,25 @@ async function gen(outPath, size, opts = {}) {
     .toFile(path.join(ASSETS, 'splash-icon.png'));
   console.log(`✓  assets/splash-icon.png  (1024×1024, centred on #0A0A0A)`);
 
-  // Favicon PNG — 32×32 for browsers that don't support SVG favicons
-  await gen(path.join(ASSETS, 'favicon.png'), 32);
+  // Favicon PNG — 32×32 — uses favicon.svg (red bg, white K) not the dark app icon
+  await sharp(fs.readFileSync(path.join(ASSETS, 'favicon.svg')))
+    .resize(32, 32)
+    .png({ compressionLevel: 9 })
+    .toFile(path.join(ASSETS, 'favicon.png'));
+  console.log(`✓  assets/favicon.png  (32×32, red bg)`);
 
   // Copy favicon to public/ so the build script picks it up
   fs.copyFileSync(path.join(ASSETS, 'favicon.svg'), path.join(PUBLIC, 'favicon.svg'));
   fs.copyFileSync(path.join(ASSETS, 'favicon.png'), path.join(PUBLIC, 'favicon.png'));
   console.log(`✓  Copied favicon.svg + favicon.png → public/`);
+
+  // Horizontal logo PNGs — 2× resolution (1040×240) for crisp screens
+  for (const variant of ['dark', 'light']) {
+    const src = path.join(ASSETS, `logo-horizontal-${variant}.svg`);
+    const out = path.join(ASSETS, `logo-horizontal-${variant}.png`);
+    await sharp(fs.readFileSync(src)).resize(1040, 240).png({ compressionLevel: 9 }).toFile(out);
+    console.log(`✓  assets/logo-horizontal-${variant}.png  (1040×240)`);
+  }
 
   console.log('\nAll icons generated.');
 })().catch(err => { console.error('Error:', err.message); process.exit(1); });
