@@ -20,8 +20,7 @@ export default function Welcome() {
         <Image source={bgImage} style={StyleSheet.absoluteFill} resizeMode="cover" />
       )}
 
-      {/* Slight dark overlay for text legibility */}
-      <View style={s.overlay} />
+      {/* No overlay needed — image is already dark */}
 
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
 
@@ -63,11 +62,6 @@ const s = StyleSheet.create({
     width:     '100%' as any,
     height:    '100%' as any,
     objectFit: 'cover' as any,
-  },
-
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.15)',
   },
 
   safe: {
