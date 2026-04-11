@@ -1,10 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// In the browser, use the same origin so API calls work on any domain
-// (kyroo.de in production, localhost in dev). For native, fall back to
-// localhost or override via EXPO_PUBLIC_API_URL.
-const API_BASE = process.env.EXPO_PUBLIC_API_URL
-  ?? (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3002');
+// In production (kyroo.de), use same origin so nginx proxies /api/.
+// In dev (expo dev server on port 8081/19006), the dev server doesn't
+// proxy /api/ so we fall back to the local backend on port 3002.
+function resolveApiBase(): string {
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+  if (typeof window !== 'undefined') {
+    const port = window.location.port;
+    // Standard ports (80/443/empty) = production behind nginx
+    if (!port || port === '80' || port === '443') return window.location.origin;
+  }
+  return 'http://localhost:3002';
+}
+const API_BASE = resolveApiBase();
 
 export type ProgramStatus = 'active' | 'queued' | 'paused' | 'completed';
 
