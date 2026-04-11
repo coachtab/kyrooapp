@@ -38,21 +38,31 @@ function WavingHand() {
 export default function Index() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [phase, setPhase] = useState<'splash' | 'greeting'>('splash');
+  const [phase, setPhase] = useState<'loading' | 'splash' | 'greeting'>('loading');
 
   useEffect(() => {
-    const t = setTimeout(() => setPhase('greeting'), 1500);
-    return () => clearTimeout(t);
-  }, []);
-
-  const handleNext = () => {
     if (isLoading) return;
+
+    // Logged-in users skip splash entirely — go straight to tabs
     if (user) {
       router.replace('/(tabs)');
       return;
     }
+
+    // Not logged in — show splash → greeting flow
+    setPhase('splash');
+    const t = setTimeout(() => setPhase('greeting'), 1500);
+    return () => clearTimeout(t);
+  }, [isLoading, user]);
+
+  const handleNext = () => {
     router.replace('/welcome');
   };
+
+  // Loading auth state or redirecting logged-in user
+  if (phase === 'loading') {
+    return <View style={s.root} />;
+  }
 
   // Phase 1 — Splash: centered KYROO logo
   if (phase === 'splash') {
