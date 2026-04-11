@@ -73,6 +73,12 @@ const t = {
     home_no_prog_sub: 'Browse plans to get started',
     home_mood_label:  'HOW ARE YOU FEELING?',
     home_habits_label:'DAILY HABITS',
+    home_headline_1:  'Kyroo ',
+    home_headline_2:  'helps you',
+    home_headline_3:  ' in many\nways',
+    home_choose_plan: 'Choose your plan',
+    home_todays:      "Today's ",
+    home_workout:     'workout',
 
     // ── Plans ─────────────────────────────────────────────────────────
     plans_title:      'Training',
@@ -327,6 +333,12 @@ const t = {
     home_no_prog_sub: 'Wähle einen Plan, um zu starten',
     home_mood_label:  'WIE FÜHLST DU DICH?',
     home_habits_label:'TÄGLICHE GEWOHNHEITEN',
+    home_headline_1:  'Kyroo ',
+    home_headline_2:  'hilft dir',
+    home_headline_3:  ' auf vielen\nWegen',
+    home_choose_plan: 'Wähle deinen Plan',
+    home_todays:      'Heutiges ',
+    home_workout:     'Training',
 
     // ── Plans ─────────────────────────────────────────────────────────
     plans_title:      'Trainings-',

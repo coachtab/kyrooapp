@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/api';
 import { colors } from '@/theme';
+import { useT } from '@/i18n';
 
 interface TodayData {
   program?: { name: string; week: number; day: number };
@@ -42,6 +43,7 @@ const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = 
 export default function HomeTab() {
   const router = useRouter();
   const { user } = useAuth();
+  const { tr } = useT();
   const [data,    setData]    = useState<TodayData | null>(null);
   const [plans,   setPlans]   = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,8 +79,8 @@ export default function HomeTab() {
           <>
             {/* Active program view */}
             <Text style={s.headline}>
-              Today's{' '}
-              <Text style={s.headlineAccent}>workout</Text>
+              {tr('home_todays')}
+              <Text style={s.headlineAccent}>{tr('home_workout')}</Text>
             </Text>
             {data?.program && (
               <Text style={s.sub}>
@@ -97,18 +99,18 @@ export default function HomeTab() {
             ))}
 
             <TouchableOpacity style={s.cta} onPress={() => router.push('/program')} activeOpacity={0.85}>
-              <Text style={s.ctaText}>View Program</Text>
+              <Text style={s.ctaText}>{tr('home_view_prog')}</Text>
             </TouchableOpacity>
           </>
         ) : (
           <>
             {/* No program — Ochy IMG_7774 style */}
             <Text style={s.headline}>
-              Kyroo{' '}
-              <Text style={s.headlineAccent}>helps you</Text>
-              {' '}in many{'\n'}ways
+              {tr('home_headline_1')}
+              <Text style={s.headlineAccent}>{tr('home_headline_2')}</Text>
+              {tr('home_headline_3')}
             </Text>
-            <Text style={s.sub}>Choose your plan</Text>
+            <Text style={s.sub}>{tr('home_choose_plan')}</Text>
 
             {/* Plan rows — clean, minimal, Ochy-style */}
             <View style={s.planList}>
