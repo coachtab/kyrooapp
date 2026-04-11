@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/api';
 import { colors } from '@/theme';
@@ -22,14 +24,22 @@ export default function HomeTab() {
   const [data,    setData]    = useState<TodayData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true);
     api.tracking.today()
       .then(setData)
       .catch(() => setData({ habits: [], streak: 0 }))
       .finally(() => setLoading(false));
   }, []);
 
-  const moods = ['😴', '😐', '🙂', '😄', '🔥'];
+  useFocusEffect(load);
+
+  const greeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return tr('home_morning');
+    if (h < 18) return tr('home_afternoon');
+    return tr('home_evening');
+  };
 
   if (loading) return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -39,16 +49,13 @@ export default function HomeTab() {
     </SafeAreaView>
   );
 
-  const greeting = () => {
-    const h = new Date().getHours();
-    if (h < 12) return tr('home_morning');
-    if (h < 18) return tr('home_afternoon');
-    return tr('home_evening');
-  };
+  const doneHabits  = data?.habits.filter(h => h.completed).length ?? 0;
+  const totalHabits = data?.habits.length ?? 0;
 
   return (
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+
         {/* Header */}
         <View style={s.header}>
           <View>
@@ -66,70 +73,57 @@ export default function HomeTab() {
           <View style={s.card}>
             <View style={s.cardRow}>
               <Text style={s.cardLabel}>{tr('home_today_label')}</Text>
-              {data.program && <Text style={s.cardMeta}>Week {data.program.week} · Day {data.program.day}</Text>}
+              {data.program && (
+                <Text style={s.cardMeta}>Week {data.program.week} · Day {data.program.day}</Text>
+              )}
             </View>
             <Text style={s.cardTitle}>{data.workout.name}</Text>
             <View style={s.exercises}>
-              {data.workout.exercises.slice(0, 4).map((ex, i) => (
+              {data.workout.exercises.slice(0, 5).map((ex, i) => (
                 <View key={i} style={s.exRow}>
+                  <View style={s.exNum}><Text style={s.exNumText}>{i + 1}</Text></View>
                   <Text style={s.exName}>{ex.name}</Text>
                   <Text style={s.exDetail}>{ex.sets} × {ex.reps}</Text>
                 </View>
               ))}
-              {data.workout.exercises.length > 4 && (
-                <Text style={s.more}>+{data.workout.exercises.length - 4} more</Text>
+              {data.workout.exercises.length > 5 && (
+                <Text style={s.more}>+{data.workout.exercises.length - 5} more exercises</Text>
               )}
             </View>
             <TouchableOpacity style={s.cta} onPress={() => router.push('/program')}>
+              <Ionicons name="play" size={16} color={colors.ctaText} style={{ marginRight: 6 }} />
               <Text style={s.ctaText}>{tr('home_view_prog')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity style={[s.card, s.emptyCard]} onPress={() => router.push('/(tabs)/plans')}>
-            <Text style={s.emptyEmoji}>🏋️</Text>
+            <Ionicons name="barbell-outline" size={40} color={colors.muted} style={{ marginBottom: 12 }} />
             <Text style={s.emptyTitle}>{tr('home_no_prog')}</Text>
             <Text style={s.emptySub}>{tr('home_no_prog_sub')}</Text>
+            <View style={s.emptyBtn}>
+              <Text style={s.emptyBtnText}>Browse plans →</Text>
+            </View>
           </TouchableOpacity>
         )}
 
-        {/* Mood check */}
-        <View style={s.card}>
-          <Text style={s.cardLabel}>{tr('home_mood_label')}</Text>
-          <View style={s.moods}>
-            {moods.map((m, i) => (
-              <TouchableOpacity
-                key={i}
-                style={[s.moodBtn, data?.mood === i && s.moodActive]}
-                onPress={() => api.tracking.saveMood(i).then(() => setData(d => d ? { ...d, mood: i } : d))}
-              >
-                <Text style={s.moodEmoji}>{m}</Text>
-              </TouchableOpacity>
-            ))}
+        {/* Daily summary strip */}
+        <View style={s.summaryRow}>
+          <View style={s.summaryCard}>
+            <Ionicons name="checkmark-circle-outline" size={20} color={colors.accent} />
+            <Text style={s.summaryNum}>{doneHabits}/{totalHabits}</Text>
+            <Text style={s.summaryLabel}>Habits</Text>
           </View>
+          <View style={s.summaryCard}>
+            <Ionicons name="flame-outline" size={20} color={colors.accent} />
+            <Text style={s.summaryNum}>{data?.streak ?? 0}</Text>
+            <Text style={s.summaryLabel}>Day streak</Text>
+          </View>
+          <TouchableOpacity style={[s.summaryCard, s.summaryAction]} onPress={() => router.push('/(tabs)/tracking')}>
+            <Ionicons name="stats-chart-outline" size={20} color={colors.accent} />
+            <Text style={s.summaryLabel}>Track today</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Habits */}
-        {(data?.habits?.length ?? 0) > 0 && (
-          <View style={s.card}>
-            <Text style={s.cardLabel}>{tr('home_habits_label')}</Text>
-            <View style={s.habits}>
-              {data!.habits.map(h => (
-                <TouchableOpacity
-                  key={h.id}
-                  style={[s.habitRow, h.completed && s.habitDone]}
-                  onPress={() => api.tracking.toggleHabit(h.id).then(r =>
-                    setData(d => d ? { ...d, habits: d.habits.map(x => x.id === h.id ? { ...x, completed: r.completed } : x) } : d)
-                  )}
-                >
-                  <View style={[s.check, h.completed && s.checkDone]}>
-                    {h.completed && <Text style={s.checkMark}>✓</Text>}
-                  </View>
-                  <Text style={[s.habitName, h.completed && s.habitNameDone]}>{h.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -144,32 +138,33 @@ const s = StyleSheet.create({
   streakBadge:  { backgroundColor: colors.accent + '20', borderRadius: 12, padding: 10, alignItems: 'center', minWidth: 64 },
   streakNum:    { fontSize: 22, fontWeight: '800', color: colors.accent },
   streakLabel:  { fontSize: 10, color: colors.accent, fontWeight: '600' },
+
   card:         { backgroundColor: colors.card, borderRadius: 18, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: colors.border },
   cardRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   cardLabel:    { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, color: colors.muted },
   cardMeta:     { fontSize: 11, color: colors.muted },
-  cardTitle:    { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 14 },
-  exercises:    { gap: 8 },
-  exRow:        { flexDirection: 'row', justifyContent: 'space-between' },
-  exName:       { fontSize: 14, color: colors.text },
-  exDetail:     { fontSize: 14, color: colors.muted },
+  cardTitle:    { fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 16 },
+
+  exercises:    { gap: 10, marginBottom: 4 },
+  exRow:        { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  exNum:        { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.accent + '20', alignItems: 'center', justifyContent: 'center' },
+  exNumText:    { fontSize: 11, fontWeight: '700', color: colors.accent },
+  exName:       { flex: 1, fontSize: 14, color: colors.text },
+  exDetail:     { fontSize: 13, color: colors.muted },
   more:         { fontSize: 13, color: colors.accent, marginTop: 4 },
-  cta:          { backgroundColor: colors.cta, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 16 },
+
+  cta:          { flexDirection: 'row', backgroundColor: colors.cta, borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', marginTop: 16 },
   ctaText:      { fontSize: 15, fontWeight: '700', color: colors.ctaText },
-  emptyCard:    { alignItems: 'center', paddingVertical: 32 },
-  emptyEmoji:   { fontSize: 40, marginBottom: 12 },
+
+  emptyCard:    { alignItems: 'center', paddingVertical: 36 },
   emptyTitle:   { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 6 },
-  emptySub:     { fontSize: 14, color: colors.muted },
-  moods:        { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
-  moodBtn:      { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.card2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
-  moodActive:   { borderColor: colors.accent, backgroundColor: colors.accent + '20' },
-  moodEmoji:    { fontSize: 24 },
-  habits:       { gap: 10, marginTop: 10 },
-  habitRow:     { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  habitDone:    { opacity: 0.7 },
-  check:        { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  checkDone:    { backgroundColor: colors.cta, borderColor: colors.cta },
-  checkMark:    { fontSize: 12, color: colors.bg, fontWeight: '800' },
-  habitName:    { fontSize: 15, color: colors.text },
-  habitNameDone:{ textDecorationLine: 'line-through', color: colors.muted },
+  emptySub:     { fontSize: 14, color: colors.muted, marginBottom: 20, textAlign: 'center' },
+  emptyBtn:     { backgroundColor: colors.accent + '20', borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 },
+  emptyBtnText: { fontSize: 14, fontWeight: '600', color: colors.accent },
+
+  summaryRow:     { flexDirection: 'row', gap: 10 },
+  summaryCard:    { flex: 1, backgroundColor: colors.card, borderRadius: 16, padding: 14, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: colors.border },
+  summaryAction:  { borderColor: colors.accent + '40', backgroundColor: colors.accent + '08' },
+  summaryNum:     { fontSize: 18, fontWeight: '800', color: colors.text },
+  summaryLabel:   { fontSize: 11, color: colors.muted, fontWeight: '500' },
 });
