@@ -40,7 +40,7 @@ export default function Login() {
     try {
       const data = await api.auth.login(email.trim(), password);
       await login(data.token, data.user);
-      router.replace('/(tabs)');
+      router.replace('/greeting');
     } catch (err: any) { setError(err.message); }
     finally { setLoading(false); }
   };

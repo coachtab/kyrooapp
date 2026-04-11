@@ -42,7 +42,7 @@ export default function Register() {
     try {
       const data = await api.auth.register(email.trim(), password);
       await login(data.token, data.user);
-      router.replace('/(tabs)');
+      router.replace('/greeting');
     } catch (err: any) { setError(err.message); }
     finally { setLoading(false); }
   };
