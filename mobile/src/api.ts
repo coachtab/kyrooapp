@@ -1,11 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// On iOS simulator / Android emulator pointing at host machine use:
-// iOS sim:       localhost
-// Android emu:   10.0.2.2
-// Physical device: your LAN IP (e.g. 192.168.1.x)
-// Override via EXPO_PUBLIC_API_URL in .env
-const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3002';
+// In the browser, use the same origin so API calls work on any domain
+// (kyroo.de in production, localhost in dev). For native, fall back to
+// localhost or override via EXPO_PUBLIC_API_URL.
+const API_BASE = process.env.EXPO_PUBLIC_API_URL
+  ?? (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3002');
 
 export type ProgramStatus = 'active' | 'queued' | 'paused' | 'completed';
 
