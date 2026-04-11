@@ -169,7 +169,10 @@ export default function Onboarding() {
 
         {/* Skip — intro screen only */}
         {isFirst && (
-          <TouchableOpacity style={s.skip} onPress={next}>
+          <TouchableOpacity style={s.skip} onPress={async () => {
+            await AsyncStorage.setItem('onboarded', '1');
+            router.replace('/welcome');
+          }}>
             <Text style={s.skipText}>Skip intro</Text>
           </TouchableOpacity>
         )}
