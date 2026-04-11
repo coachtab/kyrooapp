@@ -1,11 +1,45 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'expo-router';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { colors } from '@/theme';
+
+function WavingHand() {
+  const rot = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const wave = Animated.sequence([
+      Animated.timing(rot, { toValue: 1, duration: 150, easing: Easing.ease, useNativeDriver: true }),
+      Animated.timing(rot, { toValue: -1, duration: 300, easing: Easing.ease, useNativeDriver: true }),
+      Animated.timing(rot, { toValue: 1, duration: 300, easing: Easing.ease, useNativeDriver: true }),
+      Animated.timing(rot, { toValue: -1, duration: 300, easing: Easing.ease, useNativeDriver: true }),
+      Animated.timing(rot, { toValue: 0, duration: 150, easing: Easing.ease, useNativeDriver: true }),
+    ]);
+
+    const loop = () => {
+      wave.start(() => {
+        rot.setValue(0);
+        setTimeout(loop, 1200);
+      });
+    };
+    loop();
+    return () => rot.stopAnimation();
+  }, []);
+
+  const rotate = rot.interpolate({
+    inputRange: [-1, 0, 1],
+    outputRange: ['-20deg', '0deg', '20deg'],
+  });
+
+  return (
+    <Animated.Text style={[s.wave, { transform: [{ rotate }] }]}>
+      👋
+    </Animated.Text>
+  );
+}
 
 export default function Index() {
   const { user, isLoading } = useAuth();
@@ -47,7 +81,7 @@ export default function Index() {
           <Text style={s.greeting}>
             Hi, it's <Text style={s.accent}>Kyroo</Text>!
           </Text>
-          <Text style={s.wave}>👋</Text>
+          <WavingHand />
         </View>
 
         <TouchableOpacity style={s.next} activeOpacity={0.7} onPress={handleNext}>
