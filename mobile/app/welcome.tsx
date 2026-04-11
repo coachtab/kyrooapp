@@ -11,44 +11,33 @@ export default function Welcome() {
   return (
     <View style={s.root}>
 
-      {/* Background image — full bleed, centered */}
-      {Platform.OS === 'web' ? (
-        <Image
-          source={bgImage}
-          style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' } as any]}
-          resizeMode="cover"
-        />
-      ) : (
-        <Image
-          source={bgImage}
-          style={StyleSheet.absoluteFill}
-          resizeMode="cover"
-        />
-      )}
-
-      {/* Dark overlay for text legibility */}
-      <View style={s.overlay} />
+      {/* Background image — full bleed */}
+      <Image
+        source={bgImage}
+        style={[StyleSheet.absoluteFill, Platform.OS === 'web' && { width: '100%', height: '100%' } as any]}
+        resizeMode="cover"
+      />
 
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
 
-        {/* Headline — white, bold, centered, near top */}
-        <Text style={s.headline}>
-          Your <Text style={s.accent}>training</Text>{'\n'}
-          journey starts here!
-        </Text>
+        {/* Title + subtitle — upper area */}
+        <View style={s.top}>
+          <Text style={s.title}>Welcome to <Text style={s.accent}>Kyroo</Text></Text>
+          <Text style={s.subtitle}>AI-powered training plans{'\n'}built around you</Text>
+        </View>
 
-        {/* Spacer — image fills here */}
+        {/* Spacer */}
         <View style={s.spacer} />
 
-        {/* CTA — full-width, pinned at bottom */}
-        <TouchableOpacity style={s.cta} activeOpacity={0.85} onPress={() => router.push('/register')}>
-          <Text style={s.ctaText}>Let's Start!</Text>
-        </TouchableOpacity>
-
-        {/* Login link below */}
-        <TouchableOpacity style={s.login} activeOpacity={0.7} onPress={() => router.push('/login')}>
-          <Text style={s.loginText}>Already have an account? <Text style={s.loginLink}>Login</Text></Text>
-        </TouchableOpacity>
+        {/* Two buttons at bottom — 1:1 Ochy */}
+        <View style={s.buttons}>
+          <TouchableOpacity style={s.signUp} activeOpacity={0.85} onPress={() => router.push('/register')}>
+            <Text style={s.signUpText}>Sign Up</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.login} activeOpacity={0.7} onPress={() => router.push('/login')}>
+            <Text style={s.loginText}>Login</Text>
+          </TouchableOpacity>
+        </View>
 
       </SafeAreaView>
     </View>
@@ -60,10 +49,6 @@ const s = StyleSheet.create({
     flex:            1,
     backgroundColor: '#000',
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-  },
 
   safe: {
     flex:              1,
@@ -73,44 +58,55 @@ const s = StyleSheet.create({
     width:             '100%' as any,
   },
 
-  headline: {
-    fontSize:   28,
+  top: {
+    marginTop: 48,
+  },
+  title: {
+    fontSize:   32,
     fontWeight: '800',
     color:      '#FFFFFF',
     textAlign:  'center',
-    lineHeight: 38,
-    marginTop:  32,
+    marginBottom: 16,
   },
   accent: {
     color: colors.accent,
+  },
+  subtitle: {
+    fontSize:   17,
+    color:      'rgba(255,255,255,0.7)',
+    textAlign:  'center',
+    lineHeight: 24,
   },
 
   spacer: {
     flex: 1,
   },
 
-  cta: {
+  buttons: {
+    gap:           12,
+    paddingBottom:  8,
+  },
+  signUp: {
     backgroundColor: colors.cta,
     borderRadius:    14,
     paddingVertical: 18,
     alignItems:      'center',
   },
-  ctaText: {
+  signUpText: {
     fontSize:   18,
     fontWeight: '700',
     color:      '#FFFFFF',
   },
-
   login: {
-    paddingVertical: 16,
+    borderWidth:     1.5,
+    borderColor:     'rgba(255,255,255,0.4)',
+    borderRadius:    14,
+    paddingVertical: 18,
     alignItems:      'center',
   },
   loginText: {
-    fontSize: 14,
-    color:    colors.muted,
-  },
-  loginLink: {
-    color:      '#FFFFFF',
+    fontSize:   18,
     fontWeight: '600',
+    color:      '#FFFFFF',
   },
 });
