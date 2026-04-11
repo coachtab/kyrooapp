@@ -10,24 +10,31 @@ export default function Welcome() {
 
   return (
     <View style={s.root}>
+
+      {/* Full-bleed background image — cover + centered (like IMG_7768) */}
+      {Platform.OS === 'web' ? (
+        <View style={[StyleSheet.absoluteFill, s.bgWeb]}>
+          <Image source={bgImage} style={s.bgWebImg} resizeMode="cover" />
+        </View>
+      ) : (
+        <Image source={bgImage} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      )}
+
+      {/* Slight dark overlay for text legibility */}
+      <View style={s.overlay} />
+
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
 
-        {/* Title + subtitle — top */}
+        {/* Title + subtitle — upper area */}
         <View style={s.top}>
           <Text style={s.title}>Welcome to <Text style={s.accent}>Kyroo</Text></Text>
           <Text style={s.subtitle}>AI-powered training plans{'\n'}built around you</Text>
         </View>
 
-        {/* Siegessäule — centered between text and buttons */}
-        <View style={s.imageWrap}>
-          <Image
-            source={bgImage}
-            style={s.image}
-            resizeMode="contain"
-          />
-        </View>
+        {/* Spacer — image shows through here */}
+        <View style={s.spacer} />
 
-        {/* Two buttons — bottom */}
+        {/* Buttons at bottom */}
         <View style={s.buttons}>
           <TouchableOpacity style={s.signUp} activeOpacity={0.85} onPress={() => router.push('/register')}>
             <Text style={s.signUpText}>Sign Up</Text>
@@ -48,6 +55,21 @@ const s = StyleSheet.create({
     backgroundColor: '#000',
   },
 
+  // Web: CSS-based background for proper cover+center behavior
+  bgWeb: {
+    overflow: 'hidden',
+  },
+  bgWebImg: {
+    width:     '100%' as any,
+    height:    '100%' as any,
+    objectFit: 'cover' as any,
+  },
+
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+
   safe: {
     flex:              1,
     paddingHorizontal: 28,
@@ -60,10 +82,10 @@ const s = StyleSheet.create({
     marginTop: 48,
   },
   title: {
-    fontSize:   32,
-    fontWeight: '800',
-    color:      '#FFFFFF',
-    textAlign:  'center',
+    fontSize:     32,
+    fontWeight:   '800',
+    color:        '#FFFFFF',
+    textAlign:    'center',
     marginBottom: 16,
   },
   accent: {
@@ -76,15 +98,8 @@ const s = StyleSheet.create({
     lineHeight: 24,
   },
 
-  imageWrap: {
-    flex:           1,
-    alignItems:     'center',
-    justifyContent: 'center',
-    marginVertical: 16,
-  },
-  image: {
-    width:  '80%' as any,
-    height: '100%' as any,
+  spacer: {
+    flex: 1,
   },
 
   buttons: {
