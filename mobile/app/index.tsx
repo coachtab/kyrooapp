@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { colors } from '@/theme';
 
@@ -11,29 +13,20 @@ export default function Index() {
   const [phase, setPhase] = useState<'splash' | 'greeting'>('splash');
 
   useEffect(() => {
-    // Phase 1 → Phase 2 after 1.5s
     const t = setTimeout(() => setPhase('greeting'), 1500);
     return () => clearTimeout(t);
   }, []);
 
-  useEffect(() => {
-    if (phase !== 'greeting') return;
+  const handleNext = () => {
     if (isLoading) return;
-
     if (user) {
-      // Already logged in — go straight to tabs after short delay
-      const t = setTimeout(() => router.replace('/(tabs)'), 1200);
-      return () => clearTimeout(t);
+      router.replace('/(tabs)');
+      return;
     }
-
-    // Not logged in — route after short delay
-    const t = setTimeout(() => {
-      AsyncStorage.getItem('onboarded').then(val => {
-        router.replace(val ? '/welcome' : '/onboarding');
-      });
-    }, 2000);
-    return () => clearTimeout(t);
-  }, [phase, isLoading, user]);
+    AsyncStorage.getItem('onboarded').then(val => {
+      router.replace(val ? '/welcome' : '/onboarding');
+    });
+  };
 
   // Phase 1 — Splash: centered KYROO logo
   if (phase === 'splash') {
@@ -46,15 +39,22 @@ export default function Index() {
     );
   }
 
-  // Phase 2 — Greeting: "Hi, it's Kyroo!" + wave
+  // Phase 2 — "Hi, it's Kyroo!" + wave + "Next >"
   return (
     <View style={s.root}>
-      <View style={s.center}>
-        <Text style={s.greeting}>
-          Hi, it's <Text style={s.accent}>Kyroo</Text>!
-        </Text>
-        <Text style={s.wave}>👋</Text>
-      </View>
+      <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
+        <View style={s.center}>
+          <Text style={s.greeting}>
+            Hi, it's <Text style={s.accent}>Kyroo</Text>!
+          </Text>
+          <Text style={s.wave}>👋</Text>
+        </View>
+
+        <TouchableOpacity style={s.next} activeOpacity={0.7} onPress={handleNext}>
+          <Text style={s.nextText}>Next</Text>
+          <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+      </SafeAreaView>
     </View>
   );
 }
@@ -67,12 +67,17 @@ const s = StyleSheet.create({
     justifyContent:  'center',
   },
 
+  safe: {
+    flex:  1,
+    width: '100%' as any,
+  },
+
   // Splash logo
   logo: {
-    fontSize:       28,
-    fontWeight:     '800',
-    color:          '#FFFFFF',
-    letterSpacing:  6,
+    fontSize:      28,
+    fontWeight:    '800',
+    color:         '#FFFFFF',
+    letterSpacing: 6,
   },
   logoK: {
     color: colors.accent,
@@ -80,7 +85,9 @@ const s = StyleSheet.create({
 
   // Greeting
   center: {
-    alignItems: 'center',
+    flex:           1,
+    alignItems:     'center',
+    justifyContent: 'center',
   },
   greeting: {
     fontSize:   32,
@@ -94,5 +101,20 @@ const s = StyleSheet.create({
   wave: {
     fontSize:  36,
     marginTop: 16,
+  },
+
+  // Next
+  next: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    alignSelf:         'flex-end',
+    gap:               4,
+    paddingHorizontal: 28,
+    paddingBottom:     16,
+  },
+  nextText: {
+    fontSize:   17,
+    fontWeight: '600',
+    color:      '#FFFFFF',
   },
 });
