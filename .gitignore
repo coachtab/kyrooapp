@@ -19,3 +19,6 @@ logs
 
 # Keep deployment docs local only
 DEPLOYMENT.md
+
+# Claude Code auto-updates this with approved commands — no need to track
+.claude/settings.json
