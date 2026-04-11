@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -27,16 +27,16 @@ interface Plan {
 }
 
 const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
-  fire: 'flame',
-  arm:  'barbell',
-  bolt: 'flash',
-  leaf: 'leaf',
-  home: 'home',
-  swim: 'water',
-  flag: 'flag',
-  run:  'walk',
-  lift: 'fitness',
-  zap:  'flash',
+  fire: 'flame-outline',
+  arm:  'barbell-outline',
+  bolt: 'flash-outline',
+  leaf: 'leaf-outline',
+  home: 'home-outline',
+  swim: 'water-outline',
+  flag: 'flag-outline',
+  run:  'walk-outline',
+  lift: 'fitness-outline',
+  zap:  'flash-outline',
 };
 
 export default function HomeTab() {
@@ -67,36 +67,17 @@ export default function HomeTab() {
     </SafeAreaView>
   );
 
-  const firstName = user?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'Athlete';
-  const initials = (user?.name || user?.email || 'K')
-    .split(' ')
-    .map(w => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-
   const hasProgram = !!data?.workout;
 
   return (
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Header — Welcome + name + avatar */}
-        <View style={s.header}>
-          <View>
-            <Text style={s.welcomeLabel}>Welcome</Text>
-            <Text style={s.userName}>{firstName}</Text>
-          </View>
-          <View style={s.avatar}>
-            <Text style={s.avatarText}>{initials}</Text>
-          </View>
-        </View>
-
         {hasProgram ? (
           <>
             {/* Active program view */}
             <Text style={s.headline}>
-              Today's{'\n'}
+              Today's{' '}
               <Text style={s.headlineAccent}>workout</Text>
             </Text>
             {data?.program && (
@@ -121,45 +102,28 @@ export default function HomeTab() {
           </>
         ) : (
           <>
-            {/* No program — show plan picker */}
+            {/* No program — Ochy IMG_7774 style */}
             <Text style={s.headline}>
-              Let's build your{'\n'}
-              <Text style={s.headlineAccent}>first plan</Text>
+              Kyroo{' '}
+              <Text style={s.headlineAccent}>helps you</Text>
+              {' '}in many{'\n'}ways
             </Text>
-            <Text style={s.sub}>
-              Pick a program below. Answer a few questions.{'\n'}Your AI coach handles the rest.
-            </Text>
+            <Text style={s.sub}>Choose your plan</Text>
 
-            {/* Plan cards */}
+            {/* Plan rows — clean, minimal, Ochy-style */}
             <View style={s.planList}>
               {plans.map(plan => {
-                const iconName = ICON_MAP[plan.icon] || 'barbell';
-                const c = plan.color || colors.accent;
+                const iconName = ICON_MAP[plan.icon] || 'barbell-outline';
                 return (
                   <TouchableOpacity
                     key={plan.id}
-                    style={s.planCard}
-                    activeOpacity={0.8}
+                    style={s.planRow}
+                    activeOpacity={0.7}
                     onPress={() => router.push(`/plan/${plan.id}` as any)}
                   >
-                    {/* Left accent bar */}
-                    <View style={[s.planBar, { backgroundColor: c }]} />
-
-                    <View style={s.planBody}>
-                      <View style={s.planTop}>
-                        <View style={[s.planIcon, { backgroundColor: c + '20' }]}>
-                          <Ionicons name={iconName} size={18} color={c} />
-                        </View>
-                        <View style={s.planText}>
-                          <Text style={s.planName} numberOfLines={1}>{plan.name}</Text>
-                          <Text style={s.planDesc} numberOfLines={1}>{plan.description}</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={16} color={colors.muted} />
-                      </View>
-                      <Text style={[s.planTag, { color: c }]}>
-                        {plan.tag} · {plan.category}
-                      </Text>
-                    </View>
+                    <Ionicons name={iconName} size={20} color={colors.muted} style={s.planRowIcon} />
+                    <Text style={s.planRowName} numberOfLines={2}>{plan.name}</Text>
+                    <Ionicons name="chevron-forward" size={18} color={colors.muted} />
                   </TouchableOpacity>
                 );
               })}
@@ -173,39 +137,26 @@ export default function HomeTab() {
 }
 
 const s = StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: colors.bg },
+  safe:   { flex: 1, backgroundColor: '#000' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 28, paddingTop: 48, paddingBottom: 40 },
 
-  // Header
-  header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 },
-  welcomeLabel: { fontSize: 14, color: colors.muted },
-  userName:     { fontSize: 24, fontWeight: '800', color: colors.text, marginTop: 2 },
-  avatar:       { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  avatarText:   { fontSize: 14, fontWeight: '700', color: colors.muted },
-
-  // Headline
-  headline:       { fontSize: 28, fontWeight: '800', color: colors.text, lineHeight: 36, marginBottom: 8 },
+  // Headline — Ochy bold italic style
+  headline:       { fontSize: 26, fontWeight: '800', color: colors.text, lineHeight: 34, marginBottom: 10, fontStyle: 'italic' },
   headlineAccent: { color: colors.accent },
-  sub:            { fontSize: 14, color: colors.muted, lineHeight: 21, marginBottom: 24 },
+  sub:            { fontSize: 15, color: colors.muted, marginBottom: 32 },
+
+  // Plan rows — Ochy clean list
+  planList:    { gap: 0 },
+  planRow:     { flexDirection: 'row', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#1a1a1a' },
+  planRowIcon: { width: 28, marginRight: 14 },
+  planRowName: { flex: 1, fontSize: 16, color: colors.text, fontWeight: '500' },
 
   // Active workout
   workoutName: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 16 },
-  exRow:       { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
+  exRow:       { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#1a1a1a' },
   exName:      { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500' },
   exDetail:    { fontSize: 14, color: colors.muted, marginRight: 8 },
   cta:         { backgroundColor: colors.cta, borderRadius: 14, paddingVertical: 17, alignItems: 'center', marginTop: 24 },
   ctaText:     { fontSize: 17, fontWeight: '700', color: colors.ctaText },
-
-  // Plan list
-  planList: { gap: 10 },
-  planCard: { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
-  planBar:  { width: 4 },
-  planBody: { flex: 1, padding: 14 },
-  planTop:  { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
-  planIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  planText: { flex: 1 },
-  planName: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 2 },
-  planDesc: { fontSize: 12, color: colors.muted },
-  planTag:  { fontSize: 10, fontWeight: '700', letterSpacing: 1 },
 });
