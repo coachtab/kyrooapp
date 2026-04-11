@@ -23,8 +23,10 @@ export default function Root({ children }: PropsWithChildren) {
 
         {/* Icons */}
         <link rel="apple-touch-icon" href="/assets/icon.png" />
-        {/* Inline SVG data URI — bypasses path resolution and browser cache */}
-        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23E94560'/%3E%3Cline x1='19' y1='13' x2='19' y2='51' stroke='white' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='23' y1='32' x2='52' y2='13' stroke='white' stroke-width='7.5' stroke-linecap='round'/%3E%3Cline x1='23' y1='32' x2='52' y2='51' stroke='white' stroke-width='7.5' stroke-linecap='round'/%3E%3C/svg%3E" />
+        {/* Versioned favicon URLs — forces browser to discard any cached icon */}
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=3" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=3" />
+        <link rel="shortcut icon" href="/favicon.ico?v=3" />
 
         <title>Kyroo</title>
 
