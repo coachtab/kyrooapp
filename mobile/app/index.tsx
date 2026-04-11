@@ -51,9 +51,7 @@ export default function Index() {
       router.replace('/(tabs)');
       return;
     }
-    AsyncStorage.getItem('onboarded').then(val => {
-      router.replace(val ? '/welcome' : '/onboarding');
-    });
+    router.replace('/welcome');
   };
 
   // Phase 1 — Splash: centered KYROO logo
