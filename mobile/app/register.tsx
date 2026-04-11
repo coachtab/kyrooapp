@@ -40,9 +40,8 @@ export default function Register() {
   const submit = async () => {
     setError(''); setLoading(true);
     try {
-      const data = await api.auth.register(email.trim(), password);
-      await login(data.token, data.user);
-      router.replace('/greeting');
+      await api.auth.register(email.trim(), password);
+      router.replace({ pathname: '/verify-email', params: { email: email.trim() } } as any);
     } catch (err: any) { setError(err.message); }
     finally { setLoading(false); }
   };

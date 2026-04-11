@@ -1,12 +1,14 @@
 -- Kyroo App — Database Schema
 
 CREATE TABLE IF NOT EXISTS users (
-  id            SERIAL PRIMARY KEY,
-  email         VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255),
-  name          VARCHAR(100) NOT NULL DEFAULT 'Kyroo User',
-  is_premium    BOOLEAN NOT NULL DEFAULT false,
-  created_at    TIMESTAMP NOT NULL DEFAULT NOW()
+  id              SERIAL PRIMARY KEY,
+  email           VARCHAR(255) UNIQUE NOT NULL,
+  password_hash   VARCHAR(255),
+  name            VARCHAR(100) NOT NULL DEFAULT 'Kyroo User',
+  is_premium      BOOLEAN NOT NULL DEFAULT false,
+  email_verified  BOOLEAN NOT NULL DEFAULT false,
+  verify_token    VARCHAR(255),
+  created_at      TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS plans (

@@ -33,7 +33,8 @@ async function req(method: string, path: string, body?: unknown, tok?: string) {
 
 export const api = {
   auth: {
-    register:       (email: string, password: string)                    => req('POST', '/api/auth/register', { email, password }),
+    register:            (email: string, password: string)               => req('POST', '/api/auth/register', { email, password }),
+    resendVerification:  (email: string)                                => req('POST', '/api/auth/resend-verification', { email }),
     login:          (email: string, password: string)                    => req('POST', '/api/auth/login',    { email, password }),
     forgotPassword: (email: string)                                      => req('POST', '/api/auth/forgot-password', { email }),
     changePassword: (currentPassword: string, newPassword: string)      => req('POST', '/api/auth/change-password', { currentPassword, newPassword }),

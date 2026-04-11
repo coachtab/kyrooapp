@@ -41,7 +41,13 @@ export default function Login() {
       const data = await api.auth.login(email.trim(), password);
       await login(data.token, data.user);
       router.replace('/greeting');
-    } catch (err: any) { setError(err.message); }
+    } catch (err: any) {
+      if (err.message?.includes('verify your email')) {
+        router.push({ pathname: '/verify-email', params: { email: email.trim() } } as any);
+      } else {
+        setError(err.message);
+      }
+    }
     finally { setLoading(false); }
   };
 

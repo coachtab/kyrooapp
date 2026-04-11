@@ -1,9 +1,11 @@
 require('dotenv').config();
-const express = require('express');
-const cors    = require('cors');
-const bcrypt  = require('bcryptjs');
-const jwt     = require('jsonwebtoken');
-const { Pool } = require('pg');
+const express    = require('express');
+const cors       = require('cors');
+const bcrypt     = require('bcryptjs');
+const jwt        = require('jsonwebtoken');
+const crypto     = require('crypto');
+const nodemailer = require('nodemailer');
+const { Pool }   = require('pg');
 
 const app  = express();
 const PORT = process.env.PORT || 3002;
@@ -16,6 +18,44 @@ const pool = new Pool({
   user:     process.env.DB_USER     || 'kyroo',
   password: process.env.DB_PASSWORD || 'kyroo_pass',
 });
+
+// ── SMTP transporter ────────────────────────────────────────────────────────
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+const BASE_URL = process.env.BASE_URL || 'https://kyroo.de';
+
+async function sendVerificationEmail(email, token) {
+  const link = `${BASE_URL}/api/auth/verify-email?token=${token}`;
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM || `Kyroo <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: 'Activate your Kyroo account',
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0A0A0A;color:#F5F5F5;border-radius:16px;">
+        <h1 style="font-size:24px;font-weight:800;margin:0 0 8px;">Welcome to <span style="color:#E94560;">Kyroo</span>!</h1>
+        <p style="color:#999;font-size:14px;margin:0 0 24px;">Your AI-powered training journey starts here.</p>
+        <p style="font-size:15px;line-height:1.6;margin:0 0 24px;">
+          Click the button below to activate your account and start training.
+        </p>
+        <a href="${link}" style="display:inline-block;background:#E94560;color:#fff;font-weight:700;font-size:16px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+          Activate Account
+        </a>
+        <p style="color:#666;font-size:12px;margin:24px 0 0;">
+          If the button doesn't work, copy this link:<br/>
+          <a href="${link}" style="color:#E94560;word-break:break-all;">${link}</a>
+        </p>
+      </div>
+    `,
+  });
+}
 
 app.use(cors());
 app.use(express.json());
@@ -188,15 +228,80 @@ app.post('/api/auth/register', async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
     const displayName = name || email.split('@')[0];
-    const { rows } = await pool.query(
-      'INSERT INTO users (email, password_hash, name) VALUES ($1,$2,$3) RETURNING id, email, name, is_premium',
-      [email.toLowerCase(), hash, displayName]
+    const verifyToken = crypto.randomBytes(32).toString('hex');
+
+    await pool.query(
+      `INSERT INTO users (email, password_hash, name, email_verified, verify_token)
+       VALUES ($1,$2,$3,false,$4)`,
+      [email.toLowerCase(), hash, displayName, verifyToken]
     );
-    const user = rows[0];
-    res.json({ token: issueToken(user), user });
+
+    await sendVerificationEmail(email.toLowerCase(), verifyToken);
+
+    res.json({ pending: true, message: 'Check your email to activate your account' });
   } catch (err) {
     console.error('[register]', err.message);
     res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+// ── Email verification ──────────────────────────────────────────────────────
+app.get('/api/auth/verify-email', async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).send('Invalid link');
+
+  try {
+    const { rows } = await pool.query(
+      'UPDATE users SET email_verified = true, verify_token = NULL WHERE verify_token = $1 AND email_verified = false RETURNING email',
+      [token]
+    );
+    if (!rows.length) {
+      return res.send(`
+        <html><body style="background:#000;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+          <div style="text-align:center;">
+            <h1>Link expired or already used</h1>
+            <p style="color:#999;">Try logging in — your account may already be active.</p>
+          </div>
+        </body></html>
+      `);
+    }
+    res.send(`
+      <html><body style="background:#000;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+        <div style="text-align:center;">
+          <h1 style="margin-bottom:8px;">Account <span style="color:#E94560;">activated</span>!</h1>
+          <p style="color:#999;margin-bottom:24px;">You can now log in to Kyroo.</p>
+          <a href="${BASE_URL}" style="display:inline-block;background:#E94560;color:#fff;font-weight:700;padding:14px 32px;border-radius:12px;text-decoration:none;font-size:16px;">Open Kyroo</a>
+        </div>
+      </body></html>
+    `);
+  } catch (err) {
+    console.error('[verify-email]', err.message);
+    res.status(500).send('Verification failed');
+  }
+});
+
+// ── Resend verification email ───────────────────────────────────────────────
+app.post('/api/auth/resend-verification', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, verify_token FROM users WHERE email = $1 AND email_verified = false',
+      [email.toLowerCase()]
+    );
+    if (!rows.length) return res.json({ ok: true }); // don't leak info
+
+    let token = rows[0].verify_token;
+    if (!token) {
+      token = crypto.randomBytes(32).toString('hex');
+      await pool.query('UPDATE users SET verify_token = $1 WHERE id = $2', [token, rows[0].id]);
+    }
+    await sendVerificationEmail(email.toLowerCase(), token);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[resend-verification]', err.message);
+    res.status(500).json({ error: 'Failed to resend' });
   }
 });
 
@@ -206,7 +311,7 @@ app.post('/api/auth/login', async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      'SELECT id, email, name, password_hash, is_premium FROM users WHERE email = $1',
+      'SELECT id, email, name, password_hash, is_premium, email_verified FROM users WHERE email = $1',
       [email.toLowerCase()]
     );
     const user = rows[0];
@@ -215,7 +320,11 @@ app.post('/api/auth/login', async (req, res) => {
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ error: 'Invalid email or password' });
 
-    const { password_hash, ...safe } = user;
+    if (user.email_verified === false) {
+      return res.status(403).json({ error: 'Please verify your email before logging in', unverified: true });
+    }
+
+    const { password_hash, email_verified, verify_token, ...safe } = user;
     res.json({ token: issueToken(safe), user: safe });
   } catch (err) {
     console.error('[login]', err.message);
