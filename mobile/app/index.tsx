@@ -19,13 +19,7 @@ function WavingHand() {
       Animated.timing(rot, { toValue: 0, duration: 150, easing: Easing.ease, useNativeDriver: true }),
     ]);
 
-    const loop = () => {
-      wave.start(() => {
-        rot.setValue(0);
-        setTimeout(loop, 1200);
-      });
-    };
-    loop();
+    Animated.loop(wave).start();
     return () => rot.stopAnimation();
   }, []);
 
