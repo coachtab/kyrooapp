@@ -26,7 +26,11 @@ const HEAD_INJECT = `
   <meta name="apple-mobile-web-app-title" content="Kyroo" />
 
   <!-- iOS home screen icon -->
-  <link rel="apple-touch-icon" href="/assets/icon.png" />`;
+  <link rel="apple-touch-icon" href="/assets/icon.png" />
+
+  <!-- Favicon: SVG first (modern browsers), PNG fallback, ICO last resort -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />`;
 
 // Fix viewport: add viewport-fit=cover so content fills behind notch / Dynamic Island
 html = html.replace(

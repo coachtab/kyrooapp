@@ -23,7 +23,9 @@ export default function Root({ children }: PropsWithChildren) {
 
         {/* Icons */}
         <link rel="apple-touch-icon" href="/assets/icon.png" />
-        <link rel="icon" type="image/png" href="/favicon.png" />
+        {/* SVG first — modern browsers pick this up; PNG as fallback */}
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
 
         <title>Kyroo</title>
 
