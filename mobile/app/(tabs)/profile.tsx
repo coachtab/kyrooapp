@@ -77,7 +77,10 @@ export default function ProfileTab() {
   const confirmLogout = () =>
     Alert.alert(tr('profile_logout'), tr('profile_logout_msg'), [
       { text: tr('profile_cancel'), style: 'cancel' },
-      { text: tr('profile_logout'), style: 'destructive', onPress: logout },
+      { text: tr('profile_logout'), style: 'destructive', onPress: async () => {
+        await logout();
+        router.replace('/welcome');
+      }},
     ]);
 
   const handleActivate = (prog: ProgramSummary) => {
