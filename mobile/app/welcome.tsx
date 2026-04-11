@@ -10,26 +10,24 @@ export default function Welcome() {
 
   return (
     <View style={s.root}>
-
-      {/* Background image — full bleed */}
-      <Image
-        source={bgImage}
-        style={[StyleSheet.absoluteFill, Platform.OS === 'web' && { width: '100%', height: '100%' } as any]}
-        resizeMode="cover"
-      />
-
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
 
-        {/* Title + subtitle — upper area */}
+        {/* Title + subtitle — top */}
         <View style={s.top}>
           <Text style={s.title}>Welcome to <Text style={s.accent}>Kyroo</Text></Text>
           <Text style={s.subtitle}>AI-powered training plans{'\n'}built around you</Text>
         </View>
 
-        {/* Spacer */}
-        <View style={s.spacer} />
+        {/* Siegessäule — centered between text and buttons */}
+        <View style={s.imageWrap}>
+          <Image
+            source={bgImage}
+            style={s.image}
+            resizeMode="contain"
+          />
+        </View>
 
-        {/* Two buttons at bottom — 1:1 Ochy */}
+        {/* Two buttons — bottom */}
         <View style={s.buttons}>
           <TouchableOpacity style={s.signUp} activeOpacity={0.85} onPress={() => router.push('/register')}>
             <Text style={s.signUpText}>Sign Up</Text>
@@ -78,13 +76,20 @@ const s = StyleSheet.create({
     lineHeight: 24,
   },
 
-  spacer: {
-    flex: 1,
+  imageWrap: {
+    flex:           1,
+    alignItems:     'center',
+    justifyContent: 'center',
+    marginVertical: 16,
+  },
+  image: {
+    width:  '80%' as any,
+    height: '100%' as any,
   },
 
   buttons: {
-    gap:           12,
-    paddingBottom:  8,
+    gap:          12,
+    paddingBottom: 8,
   },
   signUp: {
     backgroundColor: colors.cta,
