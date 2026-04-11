@@ -58,7 +58,7 @@ goto :eof
 :ensure_mobile_deps
   if not exist "%MOBILE_DIR%\node_modules" (
     echo Installing mobile dependencies...
-    cd /d "%MOBILE_DIR%" && call npm install && node scripts\generate-favicon.js
+    cd /d "%MOBILE_DIR%" && call npm install && node scripts\generate-icons.js
   )
   goto :eof
 
@@ -68,7 +68,7 @@ goto :eof
   echo Installing all dependencies...
   cd /d "%BACKEND_DIR%"  && call npm install
   cd /d "%FRONTEND_DIR%" && call npm install
-  cd /d "%MOBILE_DIR%"   && call npm install && node scripts\generate-favicon.js
+  cd /d "%MOBILE_DIR%"   && call npm install && node scripts\generate-icons.js
   echo All dependencies installed.
   goto :eof
 
