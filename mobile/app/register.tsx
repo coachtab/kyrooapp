@@ -80,7 +80,7 @@ export default function Register() {
         {/* Legal */}
         <Text style={s.legal}>
           By continuing, you agree to Kyroo's{' '}
-          <Text style={s.legalLink} onPress={() => router.push('/privacy')}>Privacy Policy</Text> and{' '}
+          <Text style={s.legalLink} onPress={() => router.push('/privacy-policy')}>Privacy Policy</Text> and{' '}
           <Text style={s.legalLink} onPress={() => router.push('/terms')}>Terms and Conditions</Text>
         </Text>
 
