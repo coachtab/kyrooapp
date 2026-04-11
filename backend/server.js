@@ -4,7 +4,8 @@ const cors       = require('cors');
 const bcrypt     = require('bcryptjs');
 const jwt        = require('jsonwebtoken');
 const crypto     = require('crypto');
-const nodemailer = require('nodemailer');
+const nodemailer  = require('nodemailer');
+const compression = require('compression');
 const { Pool }   = require('pg');
 
 const app  = express();
@@ -12,12 +13,23 @@ const PORT = process.env.PORT || 3002;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
 const pool = new Pool({
-  host:     process.env.DB_HOST     || '127.0.0.1',
-  port:     parseInt(process.env.DB_PORT || '15434'),
-  database: process.env.DB_NAME     || 'kyrooapp',
-  user:     process.env.DB_USER     || 'kyroo',
-  password: process.env.DB_PASSWORD || 'kyroo_pass',
+  host:               process.env.DB_HOST     || '127.0.0.1',
+  port:               parseInt(process.env.DB_PORT || '15434'),
+  database:           process.env.DB_NAME     || 'kyrooapp',
+  user:               process.env.DB_USER     || 'kyroo',
+  password:           process.env.DB_PASSWORD || 'kyroo_pass',
+  max:                20,
+  min:                5,
+  idleTimeoutMillis:  30000,
 });
+
+// ── Simple in-memory cache ──────────────────────────────────────────────────
+const _cache = new Map();
+function cached(key, ttlMs, fn) {
+  const entry = _cache.get(key);
+  if (entry && Date.now() - entry.ts < ttlMs) return Promise.resolve(entry.data);
+  return fn().then(data => { _cache.set(key, { data, ts: Date.now() }); return data; });
+}
 
 // ── SMTP transporter ────────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
@@ -57,6 +69,7 @@ async function sendVerificationEmail(email, token) {
   });
 }
 
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 
@@ -343,7 +356,10 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 // ── Routes: Plans ────────────────────────────────────────────────────────────
 app.get('/api/plans', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM plans ORDER BY sort_order');
+    const rows = await cached('plans', 300_000, async () => {
+      const r = await pool.query('SELECT * FROM plans ORDER BY sort_order');
+      return r.rows;
+    });
     res.json(rows);
   } catch (err) {
     console.error('[plans]', err.message);
@@ -753,6 +769,11 @@ pool.connect()
     await pool.query(
       `ALTER TABLE programs ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'`
     );
+    // Performance indexes
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_habit_logs_user_date ON habit_logs(user_id, habit_id, logged_date)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_programs_user_status ON programs(user_id, status)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_program_days_program ON program_days(program_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_mood_logs_user_date ON mood_logs(user_id, logged_date)`);
     console.log('Database connected.');
   })
   .catch(err => console.error('Database connection failed:', err.message));

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from '../api';
+import { api, setTokenCache } from '../api';
 
 export interface User {
   id: number;
@@ -43,12 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (newToken: string, newUser: User) => {
+    setTokenCache(newToken);
     await AsyncStorage.setItem('kyroo_token', newToken);
     setToken(newToken);
     setUser(newUser);
   };
 
   const logout = async () => {
+    setTokenCache(null);
     await AsyncStorage.removeItem('kyroo_token');
     setToken(null);
     setUser(null);
