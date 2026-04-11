@@ -7,7 +7,6 @@ import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/api';
 import { colors } from '@/theme';
-import { useT } from '@/i18n';
 
 function AppleLogo({ size = 20 }: { size?: number }) {
   return (
@@ -31,7 +30,6 @@ function GoogleLogo({ size = 20 }: { size?: number }) {
 export default function Login() {
   const router = useRouter();
   const { login } = useAuth();
-  const { tr } = useT();
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState('');
@@ -52,72 +50,80 @@ export default function Login() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
 
-        {/* Back */}
-        <TouchableOpacity style={s.back} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={20} color={colors.muted} />
-          <Text style={s.backText}>Back</Text>
-        </TouchableOpacity>
-
-        {/* Title — Ochy centered bold */}
-        <Text style={s.title}>Welcome <Text style={s.accent}>Back</Text></Text>
-
-        {/* Divider */}
-        <View style={s.divider}>
-          <View style={s.line} /><Text style={s.divLabel}>{tr('login_divider')}</Text><View style={s.line} />
+        {/* Back + title — left-aligned row */}
+        <View style={s.header}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
+            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={s.title}>Welcome Back</Text>
         </View>
 
-        {/* Form */}
-        <Text style={s.label}>{tr('login_email')}</Text>
+        {/* Divider — "Sign in with email" */}
+        <View style={s.divider}>
+          <View style={s.line} />
+          <Text style={s.divLabel}>Sign in with email</Text>
+          <View style={s.line} />
+        </View>
+
+        {/* Email */}
+        <Text style={s.label}>Email Address</Text>
         <TextInput
           style={s.input}
-          placeholder={tr('login_email')}
-          placeholderTextColor={colors.muted}
+          placeholder="Email Address"
+          placeholderTextColor="#666"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
         />
 
-        <Text style={s.label}>{tr('login_password')}</Text>
+        {/* Password */}
+        <Text style={s.label}>Password</Text>
         <TextInput
           style={s.input}
-          placeholder={tr('login_password')}
-          placeholderTextColor={colors.muted}
+          placeholder="Password"
+          placeholderTextColor="#666"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           onSubmitEditing={submit}
         />
 
-        <TouchableOpacity onPress={() => router.push('/reset')} style={{ alignSelf: 'flex-end', marginTop: 4 }}>
-          <Text style={s.link}>{tr('login_forgot')}</Text>
-        </TouchableOpacity>
-
         {error ? <Text style={s.error}>{error}</Text> : null}
 
-        {/* CTA — Ochy full-width */}
+        {/* CTA — "Login" */}
         <TouchableOpacity style={[s.cta, loading && s.disabled]} onPress={submit} disabled={loading}>
-          <Text style={s.ctaText}>{loading ? tr('login_loading') : tr('login_submit')}</Text>
+          <Text style={s.ctaText}>{loading ? 'Signing in...' : 'Login'}</Text>
         </TouchableOpacity>
 
-        {/* Divider */}
+        {/* Divider — "or" */}
         <View style={s.divider}>
-          <View style={s.line} /><Text style={s.divLabel}>or</Text><View style={s.line} />
+          <View style={s.line} />
+          <Text style={s.divLabel}>or</Text>
+          <View style={s.line} />
         </View>
 
-        {/* Social — Ochy bordered buttons */}
+        {/* Social buttons — real brand logos */}
         <TouchableOpacity style={s.social}>
           <AppleLogo size={22} />
-          <Text style={s.socialText}>{tr('login_apple')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={s.social}>
-          <GoogleLogo size={22} />
-          <Text style={s.socialText}>{tr('login_google')}</Text>
+          <Text style={s.socialText}>Continue with Apple</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity style={[s.social, s.socialGoogle]}>
+          <GoogleLogo size={22} />
+          <Text style={s.socialText}>Continue with Google</Text>
+        </TouchableOpacity>
+
+        {/* Forgot password */}
+        <Text style={s.forgot}>
+          Forgot password?{' '}
+          <Text style={s.forgotLink} onPress={() => router.push('/reset')}>Click here</Text>
+        </Text>
+
+        {/* Footer */}
         <Text style={s.footer}>
-          {tr('login_footer')}{'  '}
-          <Text style={s.link} onPress={() => router.push('/register')}>{tr('login_register')}</Text>
+          Don't have an account?{' '}
+          <Text style={s.footerLink} onPress={() => router.push('/register')}>Register here</Text>
         </Text>
 
       </ScrollView>
@@ -127,30 +133,38 @@ export default function Login() {
 }
 
 const s = StyleSheet.create({
-  safe:       { flex: 1, backgroundColor: colors.bg },
-  scroll:     { paddingHorizontal: 28, paddingTop: 16, paddingBottom: 40 },
+  safe:   { flex: 1, backgroundColor: '#000' },
+  scroll: { paddingHorizontal: 28, paddingTop: 12, paddingBottom: 40 },
 
-  back:       { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 24, alignSelf: 'flex-start' },
-  backText:   { fontSize: 14, color: colors.muted },
+  // Header
+  header:   { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 24 },
+  title:    { fontSize: 28, fontWeight: '800', color: '#FFFFFF' },
 
-  title:      { fontSize: 30, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: 8 },
-  accent:     { color: colors.accent },
+  // Divider
+  divider:  { flexDirection: 'row', alignItems: 'center', gap: 14, marginVertical: 20 },
+  line:     { flex: 1, height: 1, backgroundColor: '#333' },
+  divLabel: { fontSize: 13, color: '#888' },
 
-  divider:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 20 },
-  line:       { flex: 1, height: 1, backgroundColor: colors.border },
-  divLabel:   { fontSize: 12, color: colors.muted },
+  // Form
+  label:    { fontSize: 14, color: '#FFFFFF', fontWeight: '700', marginBottom: 8 },
+  input:    { borderWidth: 1, borderColor: '#333', borderRadius: 10, padding: 16, fontSize: 16, color: '#FFFFFF', marginBottom: 16 },
+  error:    { color: colors.error, fontSize: 13, textAlign: 'center', marginBottom: 8 },
 
-  label:      { fontSize: 14, color: colors.text, fontWeight: '700', marginBottom: 8, marginTop: 4 },
-  input:      { borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 16, fontSize: 16, color: colors.text, marginBottom: 12 },
-  link:       { color: colors.accent, fontWeight: '600', fontSize: 13 },
-  error:      { color: colors.error, fontSize: 13, textAlign: 'center', marginTop: 8 },
+  // CTA
+  cta:      { backgroundColor: colors.cta, borderRadius: 12, paddingVertical: 17, alignItems: 'center', marginTop: 4 },
+  ctaText:  { fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
+  disabled: { opacity: 0.6 },
 
-  cta:        { backgroundColor: colors.cta, borderRadius: 14, paddingVertical: 17, alignItems: 'center', marginTop: 16 },
-  ctaText:    { fontSize: 17, fontWeight: '700', color: colors.ctaText },
-  disabled:   { opacity: 0.6 },
+  // Social
+  social:      { borderWidth: 1, borderColor: '#333', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 },
+  socialGoogle:{ backgroundColor: '#1a1610' },
+  socialText:  { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
 
-  social:     { borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 10 },
-  socialText: { fontSize: 16, fontWeight: '600', color: colors.text },
+  // Forgot
+  forgot:     { textAlign: 'center', color: '#888', fontSize: 14, marginTop: 16 },
+  forgotLink: { color: '#FFFFFF', fontWeight: '600', textDecorationLine: 'underline' },
 
-  footer:     { textAlign: 'center', color: colors.muted, fontSize: 14, marginTop: 24 },
+  // Footer
+  footer:     { textAlign: 'center', color: '#888', fontSize: 14, marginTop: 12 },
+  footerLink: { color: '#FFFFFF', fontWeight: '600', textDecorationLine: 'underline' },
 });
