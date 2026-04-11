@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="200" fill="#0A0A0A"/>
+
+  <!-- Subtle outer ring — ties to welcome screen rings motif -->
+  <circle cx="512" cy="512" r="400" fill="none" stroke="#E94560" stroke-width="3" opacity="0.18"/>
+
+  <!-- K lettermark — vertical bar -->
+  <line x1="282" y1="196" x2="282" y2="828"
+        stroke="#E94560" stroke-width="92" stroke-linecap="round"/>
+
+  <!-- K — upper arm: from mid-bar junction to top-right -->
+  <line x1="326" y1="512" x2="772" y2="196"
+        stroke="#E94560" stroke-width="80" stroke-linecap="round"/>
+
+  <!-- K — lower arm: from mid-bar junction to bottom-right -->
+  <line x1="326" y1="512" x2="772" y2="828"
+        stroke="#E94560" stroke-width="80" stroke-linecap="round"/>
+</svg>
