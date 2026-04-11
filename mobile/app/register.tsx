@@ -32,37 +32,39 @@ export default function Register() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
 
-        {/* Back */}
-        <TouchableOpacity style={s.back} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={20} color={colors.muted} />
-          <Text style={s.backText}>Back</Text>
-        </TouchableOpacity>
-
-        {/* Title — Ochy centered bold */}
-        <Text style={s.title}>Sign <Text style={s.accent}>Up</Text></Text>
-
-        {/* Divider */}
-        <View style={s.divider}>
-          <View style={s.line} /><Text style={s.divLabel}>{tr('register_divider')}</Text><View style={s.line} />
+        {/* Back + title — left-aligned row */}
+        <View style={s.header}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
+            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={s.title}>Sign Up</Text>
         </View>
 
-        {/* Form */}
-        <Text style={s.label}>{tr('register_email')}</Text>
+        {/* Divider — "With a mail address" */}
+        <View style={s.divider}>
+          <View style={s.line} />
+          <Text style={s.divLabel}>With a mail address</Text>
+          <View style={s.line} />
+        </View>
+
+        {/* Email */}
+        <Text style={s.label}>Email Address</Text>
         <TextInput
           style={s.input}
-          placeholder={tr('register_email')}
-          placeholderTextColor={colors.muted}
+          placeholder="Email Address"
+          placeholderTextColor="#666"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
         />
 
-        <Text style={s.label}>{tr('register_password')}</Text>
+        {/* Password */}
+        <Text style={s.label}>Password</Text>
         <TextInput
           style={s.input}
-          placeholder={tr('register_ph_pass')}
-          placeholderTextColor={colors.muted}
+          placeholder="Password"
+          placeholderTextColor="#666"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -71,31 +73,40 @@ export default function Register() {
 
         {error ? <Text style={s.error}>{error}</Text> : null}
 
-        {/* CTA */}
+        {/* CTA — "Continue" */}
         <TouchableOpacity style={[s.cta, loading && s.disabled]} onPress={submit} disabled={loading}>
-          <Text style={s.ctaText}>{loading ? tr('register_loading') : tr('register_submit')}</Text>
+          <Text style={s.ctaText}>{loading ? 'Creating account...' : 'Continue'}</Text>
         </TouchableOpacity>
 
-        <Text style={s.legal}>{tr('register_legal')}</Text>
+        {/* Legal */}
+        <Text style={s.legal}>
+          By continuing, you agree to Kyroo's{' '}
+          <Text style={s.legalLink} onPress={() => router.push('/privacy')}>Privacy Policy</Text> and{' '}
+          <Text style={s.legalLink} onPress={() => router.push('/terms')}>Terms and Conditions</Text>
+        </Text>
 
-        {/* Divider */}
+        {/* Divider — "or" */}
         <View style={s.divider}>
-          <View style={s.line} /><Text style={s.divLabel}>or</Text><View style={s.line} />
+          <View style={s.line} />
+          <Text style={s.divLabel}>or</Text>
+          <View style={s.line} />
         </View>
 
-        {/* Social */}
+        {/* Social buttons */}
         <TouchableOpacity style={s.social}>
-          <Ionicons name="logo-apple" size={19} color={colors.text} />
-          <Text style={s.socialText}>{tr('register_apple')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={s.social}>
-          <Ionicons name="logo-google" size={17} color={colors.text} />
-          <Text style={s.socialText}>{tr('register_google')}</Text>
+          <Ionicons name="logo-apple" size={20} color="#FFFFFF" />
+          <Text style={s.socialText}>Continue with Apple</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity style={[s.social, s.socialGoogle]}>
+          <Ionicons name="logo-google" size={18} color="#FFFFFF" />
+          <Text style={s.socialText}>Continue with Google</Text>
+        </TouchableOpacity>
+
+        {/* Footer */}
         <Text style={s.footer}>
-          {tr('register_footer')}{'  '}
-          <Text style={s.link} onPress={() => router.push('/login')}>{tr('register_login')}</Text>
+          Already have an account?{' '}
+          <Text style={s.footerLink} onPress={() => router.push('/login')}>Login</Text>
         </Text>
 
       </ScrollView>
@@ -105,32 +116,38 @@ export default function Register() {
 }
 
 const s = StyleSheet.create({
-  safe:       { flex: 1, backgroundColor: colors.bg },
-  scroll:     { paddingHorizontal: 28, paddingTop: 16, paddingBottom: 40 },
+  safe:   { flex: 1, backgroundColor: '#000' },
+  scroll: { paddingHorizontal: 28, paddingTop: 12, paddingBottom: 40 },
 
-  back:       { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 24, alignSelf: 'flex-start' },
-  backText:   { fontSize: 14, color: colors.muted },
+  // Header
+  header:   { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 24 },
+  title:    { fontSize: 28, fontWeight: '800', color: '#FFFFFF' },
 
-  title:      { fontSize: 30, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: 8 },
-  accent:     { color: colors.accent },
+  // Divider
+  divider:  { flexDirection: 'row', alignItems: 'center', gap: 14, marginVertical: 20 },
+  line:     { flex: 1, height: 1, backgroundColor: '#333' },
+  divLabel: { fontSize: 13, color: '#888' },
 
-  divider:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 20 },
-  line:       { flex: 1, height: 1, backgroundColor: colors.border },
-  divLabel:   { fontSize: 12, color: colors.muted },
+  // Form
+  label:    { fontSize: 14, color: '#FFFFFF', fontWeight: '700', marginBottom: 8 },
+  input:    { borderWidth: 1, borderColor: '#333', borderRadius: 10, padding: 16, fontSize: 16, color: '#FFFFFF', marginBottom: 16 },
+  error:    { color: colors.error, fontSize: 13, textAlign: 'center', marginBottom: 8 },
 
-  label:      { fontSize: 14, color: colors.text, fontWeight: '700', marginBottom: 8, marginTop: 4 },
-  input:      { borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 16, fontSize: 16, color: colors.text, marginBottom: 12 },
-  error:      { color: colors.error, fontSize: 13, textAlign: 'center', marginTop: 8 },
+  // CTA
+  cta:      { backgroundColor: colors.cta, borderRadius: 12, paddingVertical: 17, alignItems: 'center', marginTop: 4 },
+  ctaText:  { fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
+  disabled: { opacity: 0.6 },
 
-  cta:        { backgroundColor: colors.cta, borderRadius: 14, paddingVertical: 17, alignItems: 'center', marginTop: 16 },
-  ctaText:    { fontSize: 17, fontWeight: '700', color: colors.ctaText },
-  disabled:   { opacity: 0.6 },
+  // Legal
+  legal:     { fontSize: 13, color: '#888', lineHeight: 20, marginTop: 14 },
+  legalLink: { color: '#FFFFFF', textDecorationLine: 'underline' },
 
-  legal:      { fontSize: 12, color: colors.muted, textAlign: 'center', lineHeight: 18, marginTop: 12 },
+  // Social
+  social:      { borderWidth: 1, borderColor: '#333', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 },
+  socialGoogle:{ backgroundColor: '#1a1610' },
+  socialText:  { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
 
-  social:     { borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 10 },
-  socialText: { fontSize: 16, fontWeight: '600', color: colors.text },
-
-  footer:     { textAlign: 'center', color: colors.muted, fontSize: 14, marginTop: 24 },
-  link:       { color: colors.accent, fontWeight: '600' },
+  // Footer
+  footer:     { textAlign: 'center', color: '#888', fontSize: 14, marginTop: 16 },
+  footerLink: { color: '#FFFFFF', textDecorationLine: 'underline', fontWeight: '600' },
 });
