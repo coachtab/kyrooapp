@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
@@ -74,14 +74,17 @@ export default function ProfileTab() {
     }
   };
 
-  const confirmLogout = () =>
-    Alert.alert(tr('profile_logout'), tr('profile_logout_msg'), [
-      { text: tr('profile_cancel'), style: 'cancel' },
-      { text: tr('profile_logout'), style: 'destructive', onPress: async () => {
-        await logout();
-        router.replace('/welcome');
-      }},
-    ]);
+  const confirmLogout = () => {
+    const doLogout = async () => { await logout(); router.replace('/welcome'); };
+    if (Platform.OS === 'web') {
+      if (window.confirm(tr('profile_logout_msg'))) doLogout();
+    } else {
+      Alert.alert(tr('profile_logout'), tr('profile_logout_msg'), [
+        { text: tr('profile_cancel'), style: 'cancel' },
+        { text: tr('profile_logout'), style: 'destructive', onPress: doLogout },
+      ]);
+    }
+  };
 
   const handleActivate = (prog: ProgramSummary) => {
     const hasActive = programs.some(p => p.status === 'active' && p.id !== prog.id);
