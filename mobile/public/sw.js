@@ -1,6 +1,6 @@
 // Kyroo Service Worker
 // Cache version — bump this whenever you deploy a new build
-const CACHE = 'kyroo-v1';
+const CACHE = 'kyroo-v2';
 
 // App shell — these are cached on install so the app loads instantly
 const SHELL = [

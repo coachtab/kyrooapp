@@ -28,15 +28,19 @@ const HEAD_INJECT = `
   <!-- iOS home screen icon -->
   <link rel="apple-touch-icon" href="/assets/icon.png" />
 
-  <!-- Favicon: SVG first (modern browsers), PNG fallback, ICO last resort -->
+  <!-- Favicon: SVG (modern browsers) → PNG → ICO fallback -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />`;
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+  <link rel="icon" href="/favicon.ico" />
+
+`;
 
 // Fix viewport: add viewport-fit=cover so content fills behind notch / Dynamic Island
 html = html.replace(
   'width=device-width, initial-scale=1, shrink-to-fit=no',
   'width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover'
 );
+
 
 // Inject PWA tags before </head>
 html = html.replace('</head>', HEAD_INJECT + '\n</head>');

@@ -3,6 +3,7 @@
 // Run: node scripts/generate-icons.js
 
 const sharp  = require('sharp');
+const toIco  = require('to-ico');
 const path   = require('path');
 const fs     = require('fs');
 
@@ -54,7 +55,16 @@ async function gen(outPath, size, opts = {}) {
     .toFile(path.join(ASSETS, 'favicon.png'));
   console.log(`✓  assets/favicon.png  (32×32, red bg)`);
 
-  // Copy favicon to public/ so the build script picks it up
+  // Generate proper favicon.ico (16, 32, 48px) from favicon.svg
+  const favSvg = fs.readFileSync(path.join(ASSETS, 'favicon.svg'));
+  const icoPngs = await Promise.all(
+    [16, 32, 48].map(s => sharp(favSvg).resize(s, s).png().toBuffer())
+  );
+  const icoBuffer = await toIco(icoPngs);
+  fs.writeFileSync(path.join(PUBLIC, 'favicon.ico'), icoBuffer);
+  console.log(`✓  public/favicon.ico  (16/32/48px multi-resolution)`);
+
+  // Copy favicon SVG + PNG to public/
   fs.copyFileSync(path.join(ASSETS, 'favicon.svg'), path.join(PUBLIC, 'favicon.svg'));
   fs.copyFileSync(path.join(ASSETS, 'favicon.png'), path.join(PUBLIC, 'favicon.png'));
   console.log(`✓  Copied favicon.svg + favicon.png → public/`);
