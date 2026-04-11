@@ -1,6 +1,7 @@
 export const colors = {
-  accent:  '#E94560',  // red
-  cta:     '#A8E10C',  // lime green
+  accent:  '#E94560',
+  cta:     '#E94560',  // unified with accent — one brand color
+  ctaText: '#FFFFFF',  // text on CTA buttons (was dark bg)
   bg:      '#0A0A0A',
   card:    '#161618',
   card2:   '#1E1E22',

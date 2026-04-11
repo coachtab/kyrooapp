@@ -94,8 +94,8 @@ const s = StyleSheet.create({
     height:          260,
     bottom:          -60,
     right:           -60,
-    backgroundColor: colors.cta,
-    opacity:         0.10,
+    backgroundColor: colors.accent,
+    opacity:         0.07,
   },
 
   safe: {
@@ -173,7 +173,7 @@ const s = StyleSheet.create({
   ctaText: {
     fontSize:   17,
     fontWeight: '700',
-    color:      colors.bg,
+    color:      colors.ctaText,
   },
   outline: {
     borderWidth:     1.5,

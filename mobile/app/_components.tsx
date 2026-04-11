@@ -155,7 +155,7 @@ const pc = StyleSheet.create({
   infoText:      { fontSize: 12, color: colors.muted, marginBottom: 8 },
   actions:       { flexDirection: 'row', gap: 8, marginTop: 4 },
   btnPrimary:    { backgroundColor: colors.cta, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14 },
-  btnPrimaryText:{ fontSize: 13, fontWeight: '700', color: colors.bg },
+  btnPrimaryText:{ fontSize: 13, fontWeight: '700', color: colors.ctaText },
   btnGhost:      { borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14 },
   btnGhostText:  { fontSize: 13, color: colors.muted },
 });

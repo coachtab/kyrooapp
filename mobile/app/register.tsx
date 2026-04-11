@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/api';
 import { colors } from '@/theme';
@@ -53,8 +54,14 @@ export default function Register() {
         <Text style={s.legal}>{tr('register_legal')}</Text>
         <Divider label="or" />
         <View style={s.socials}>
-          <TouchableOpacity style={s.social}><Text style={s.socialText}>{tr('register_apple')}</Text></TouchableOpacity>
-          <TouchableOpacity style={s.social}><Text style={s.socialText}>{tr('register_google')}</Text></TouchableOpacity>
+          <TouchableOpacity style={s.social}>
+            <Ionicons name="logo-apple" size={19} color={colors.text} style={s.socialIcon} />
+            <Text style={s.socialText}>{tr('register_apple')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.social}>
+            <Ionicons name="logo-google" size={17} color={colors.text} style={s.socialIcon} />
+            <Text style={s.socialText}>{tr('register_google')}</Text>
+          </TouchableOpacity>
         </View>
         <Text style={s.footer}>{tr('register_footer')}{'  '}
           <Text style={s.link} onPress={() => router.push('/login')}>{tr('register_login')}</Text>
@@ -75,11 +82,12 @@ const s = StyleSheet.create({
   form:       { gap: 12 },
   error:      { color: colors.error, fontSize: 13, textAlign: 'center' },
   cta:        { backgroundColor: colors.cta, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
-  ctaText:    { fontSize: 17, fontWeight: '700', color: colors.bg },
+  ctaText:    { fontSize: 17, fontWeight: '700', color: colors.ctaText },
   disabled:   { opacity: 0.6 },
   legal:      { fontSize: 12, color: colors.muted, textAlign: 'center', lineHeight: 18, marginVertical: 8 },
   socials:    { gap: 10 },
-  social:     { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
+  social:     { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  socialIcon: { marginTop: 1 },
   socialText: { fontSize: 16, fontWeight: '600', color: colors.text },
   footer:     { textAlign: 'center', color: colors.muted, fontSize: 14, marginTop: 24 },
   link:       { color: colors.accent, fontWeight: '600' },

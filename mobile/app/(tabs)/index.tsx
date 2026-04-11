@@ -155,7 +155,7 @@ const s = StyleSheet.create({
   exDetail:     { fontSize: 14, color: colors.muted },
   more:         { fontSize: 13, color: colors.accent, marginTop: 4 },
   cta:          { backgroundColor: colors.cta, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 16 },
-  ctaText:      { fontSize: 15, fontWeight: '700', color: colors.bg },
+  ctaText:      { fontSize: 15, fontWeight: '700', color: colors.ctaText },
   emptyCard:    { alignItems: 'center', paddingVertical: 32 },
   emptyEmoji:   { fontSize: 40, marginBottom: 12 },
   emptyTitle:   { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 6 },

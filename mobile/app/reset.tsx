@@ -47,6 +47,6 @@ const s = StyleSheet.create({
   label:   { fontSize: 12, color: colors.muted, fontWeight: '500', letterSpacing: 0.5, marginBottom: 6 },
   input:   { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 14, padding: 16, fontSize: 16, color: colors.text },
   cta:     { backgroundColor: colors.cta, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 16 },
-  ctaText: { fontSize: 17, fontWeight: '700', color: colors.bg },
+  ctaText: { fontSize: 17, fontWeight: '700', color: colors.ctaText },
   disabled: { opacity: 0.6 },
 });
