@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -640,6 +640,14 @@ export default function Form() {
   const current    = STEPS[step];
   const total      = STEPS.length;
   const sliderVal  = (answers[current.key] as number) ?? current.min ?? 0;
+
+  // Reset training_days every time user enters the daySelect step,
+  // so going back always starts the day picker fresh
+  useEffect(() => {
+    if (current.type === 'daySelect') {
+      setAnswers(a => ({ ...a, training_days: [] as any }));
+    }
+  }, [step, current.type]);
 
   const answer = (value: string | number) => {
     setAnswers(a => ({ ...a, [current.key]: value }));
