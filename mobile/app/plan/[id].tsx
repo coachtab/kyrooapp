@@ -125,7 +125,7 @@ export default function PlanDetail() {
         {/* CTA — matches difficulty color */}
         <TouchableOpacity
           style={[s.cta, { backgroundColor: diffColor }]}
-          onPress={() => router.push({ pathname: '/form', params: { planId: plan.id, category: plan.category } })}
+          onPress={() => router.push({ pathname: '/form', params: { planId: plan.id, category: plan.category, difficulty: plan.difficulty } })}
         >
           <Text style={s.ctaText}>{tr('plan_start')}</Text>
         </TouchableOpacity>

@@ -385,9 +385,16 @@ const DE_DEFAULT: Step[] = [
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function Form() {
-  const { planId, category } = useLocalSearchParams<{ planId?: string; category?: string }>();
+  const { planId, category, difficulty } = useLocalSearchParams<{ planId?: string; category?: string; difficulty?: string }>();
   const router  = useRouter();
   const { tr, lang } = useT();
+
+  const DIFFICULTY_COLOR: Record<string, string> = {
+    beginner:     '#4CAF50',
+    intermediate: '#F59E0B',
+    advanced:     '#E94560',
+  };
+  const diffColor = DIFFICULTY_COLOR[(difficulty || '').toLowerCase()] || colors.accent;
 
   const byCategory = lang === 'de' ? DE : EN;
   const defaultSteps = lang === 'de' ? DE_DEFAULT : EN_DEFAULT;
@@ -422,7 +429,7 @@ export default function Form() {
     <SafeAreaView style={s.safe}>
       {/* Progress bar */}
       <View style={s.progressBar}>
-        <View style={[s.progressFill, { width: `${((step + 1) / total) * 100}%` as any }]} />
+        <View style={[s.progressFill, { width: `${((step + 1) / total) * 100}%` as any, backgroundColor: diffColor }]} />
       </View>
 
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
