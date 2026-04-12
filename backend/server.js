@@ -516,11 +516,35 @@ RULES:
 - 4-7 exercises per training day
 - Reps format: use strings like "8-10", "12", "30s", "5km" — never objects
 
-CATEGORY TONE GUIDANCE:
-- ACTIVE AGING: The user is 55+ and wants to stay strong and independent. Treat them as a capable adult, NOT a patient. Use empowering language ("Build lower-body strength", not "Therapeutic leg exercises"). Emphasise progression — they can get stronger. Include balance work, bone-loading (light resistance on major bones), grip strength, and functional patterns (sit-to-stand, step-ups, loaded carries). Avoid anything high-impact or that requires quick changes of direction unless the user is clearly very active. Names should sound like a gym program, not a physio clinic.
-- MOBILITY: Focus on daily doable routines of 15-25 minutes. Mix stretches, yoga poses, joint mobilisations, and foam rolling. Name poses in plain language (e.g. "Pigeon Pose", "Cat-Cow", "90/90 Hip Stretch").
-- CALISTHENICS: The user picked a target_skill — every week should build progressions toward that specific skill. Reference classic calisthenics regressions (e.g. negatives, tuck holds, band-assisted reps).
-- SPORT PREP: The user picked a target_sport — shape the program around that sport's energy systems, movement patterns, and typical injuries. Respect season_timing: Within 4 weeks = taper, 4-8 weeks = sharpening, 8-16 weeks = base + build, No competition = year-round development.`;
+CATEGORY TONE & CONTENT GUIDANCE (match the plan's philosophy):
+
+- FAT LOSS: The goal is a sustainable caloric burn through movement. Mix resistance training (preserves muscle during weight loss) with varied cardio formats (steady-state, intervals, circuits). Rotate full-body sessions. Include 1-2 metabolic circuits per week. Use compound movements that burn more calories. Avoid pure bodybuilding splits.
+
+- HYPERTROPHY: Pure muscle-building using progressive overload. Follow a classic split (Push/Pull/Legs or Upper/Lower). Use 6-12 rep ranges for most work, 8-15 for isolation. Anchor each session with 1-2 heavy compound lifts (squat, deadlift, bench, row, OHP). Respect the user's weak_spot selection by adding extra volume there.
+
+- TRANSFORMATION (90-Day Body Challenge): Holistic body recomposition over 3 phases. Phase 1 = build the engine (cardio base + movement quality). Phase 2 = combine fat loss with muscle gain (strength + conditioning). Phase 3 = peak definition (intensity + precision). Mix every energy system. Include both heavy lifts and conditioning work in the same week.
+
+- FIRST STEPS: Pure beginner. Confidence-building is more important than intensity. Teach the 5 foundational patterns (squat, hinge, push, pull, carry) using bodyweight or very light weight. Sessions should be SHORT (15-30 min). Include 1-2 "learn-this" new moves per session, lots of repetition, no advanced exercises. Reassure through progression — the user should feel capable after every session.
+
+- NO GYM: Bodyweight-only progressions over 6 weeks. No equipment assumed. Master push-ups, squats, planks, lunges, rows (table/door), then add variations (archer, Bulgarian split, decline push-up). Use circuits and supersets to replace equipment-based intensity. Keep session length flexible (15-45 min).
+
+- POOL (Swim Fit Program): Proper swim sessions with 4 phases — Warm-up (easy 200-400m), Drills (technique work: catch-up, fingertip drag, kickboard), Main set (intervals with rest), Cool-down (easy 100-200m). Specify distances in metres. Match stroke to user's stroke answer. 3 sessions per week max.
+
+- RACE READY (Hyrox): Mix running with the 8 Hyrox stations (ski erg, sled push, sled pull, burpee broad jumps, rowing, farmer's carry, sandbag lunges, wall balls). Build from station technique → station intervals → full race simulations. Respect the user's race_timing for taper structure.
+
+- HALF OR FULL (Marathon): Classic marathon periodisation — Easy runs (Zone 2), Tempo runs (comfortably hard), Intervals (VO2 max), and one Long Run per week. Follow a 4-week cycle (3 build + 1 recovery). Taper the last 2-3 weeks. Specify distances in km and pace in min/km zones. Base volume on user's current_run_km.
+
+- FUNCTIONAL (CrossFit-Style): Each session = Strength/Skill + WOD (Workout of the Day). Strength = heavy compound lift (1-5 reps), Skill = gymnastics (pull-ups, handstands, ring work), WOD = high-intensity metcon in AMRAP/For Time/EMOM format. Reference classic CrossFit named workouts when appropriate (Cindy, Fran, Murph scaled). Target the user's weak_area for extra work.
+
+- HIGH INTENSITY (HIIT): Short, intense, interval-based. Use specific formats: Tabata (20s/10s × 8), EMOM (every minute on the minute), AMRAP (as many rounds as possible), classic intervals (30/30, 40/20). Sessions are 15-45 min MAX. Explicit work/rest ratios. Rotate formats each session for variety.
+
+- MOBILITY & RECOVERY: Daily doable routines of 15-25 minutes. Mix stretches, yoga poses, joint mobilisations, and foam rolling. Name poses in plain language (e.g. "Pigeon Pose", "Cat-Cow", "90/90 Hip Stretch", "Couch Stretch"). Target the user's tight_area each session.
+
+- CALISTHENICS & SKILLS: The user picked a target_skill — every week should build progressions toward that specific skill. Reference classic calisthenics regressions (e.g. scapular pulls → assisted pull-ups → negatives → archer → one-arm). Include skill-specific holds (tuck planche, hollow body, L-sit) and accessory strength work.
+
+- SPORT PREP: The user picked a target_sport — shape the program around that sport's energy systems, movement patterns, and typical injuries. Respect season_timing: Within 4 weeks = taper, 4-8 weeks = sharpening, 8-16 weeks = base + build, No competition = year-round development. Include sport-specific conditioning (e.g. boxing rounds for combat, intervals for endurance sports).
+
+- ACTIVE AGING: The user is 55+ and wants to stay strong and independent. Treat them as a capable adult, NOT a patient. Use empowering language ("Build lower-body strength", not "Therapeutic leg exercises"). Emphasise progression — they can get stronger. Include balance work, bone-loading (light resistance on major bones), grip strength, and functional patterns (sit-to-stand, step-ups, loaded carries). Avoid anything high-impact or that requires quick changes of direction unless the user is clearly very active. Names should sound like a gym program, not a physio clinic.`;
 
   const resp = await anthropic.messages.create({
     model: 'claude-sonnet-4-5-20250929',
