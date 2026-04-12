@@ -686,7 +686,7 @@ export default function Form() {
     setLoading(true);
     try {
       const q = await api.questionnaire.save({ ...answers, plan_id: planId ? Number(planId) : undefined });
-      router.replace({ pathname: '/generating', params: { questionnaireId: q.id } });
+      router.replace({ pathname: '/generating', params: { questionnaireId: q.id, difficulty: difficulty || '' } });
     } catch {
       setLoading(false);
     }
