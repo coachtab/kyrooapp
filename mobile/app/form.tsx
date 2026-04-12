@@ -653,10 +653,11 @@ export default function Form() {
   const [loading,     setLoading]     = useState(false);
   const [heightUnit,  setHeightUnit]  = useState<'cm' | 'ft'>('cm');
   const [weightUnit,  setWeightUnit]  = useState<'kg' | 'lbs'>('kg');
+  // Height/weight always start with a visible value, so they count as
+  // "answered" from the start — user can still slide to change. Gender is
+  // considered answered only if pre-filled from the user profile.
   const [touchedKeys, setTouchedKeys] = useState<Set<string>>(() => {
-    const init = new Set<string>();
-    if (storedHeight != null) init.add('height_cm');
-    if (storedWeight != null) init.add('weight_kg');
+    const init = new Set<string>(['height_cm', 'weight_kg']);
     if (user?.gender) init.add('gender');
     return init;
   });
