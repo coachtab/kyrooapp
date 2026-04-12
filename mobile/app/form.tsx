@@ -437,6 +437,33 @@ const EN: Record<string, Step[]> = {
     { key: 'days_per_week', question: 'How many prep sessions', questionAccent: 'per week?', hint: 'On top of your sport practice', type: 'slider', min: 3, max: 6, unit: ' days' },
     { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
   ],
+
+  'ACTIVE AGING': [
+    { key: 'aging_goal', question: 'What matters', questionAccent: 'most to you?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Stay independent',        icon: 'walk-outline'            },
+        { label: 'Prevent falls',           icon: 'shield-checkmark-outline'},
+        { label: 'Better balance',          icon: 'swap-horizontal-outline' },
+        { label: 'Strength for daily life', icon: 'barbell-outline'         },
+      ]},
+    { key: 'current_mobility', question: 'How active are you', questionAccent: 'right now?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Very active — regular activities', icon: 'flash-outline'  },
+        { label: 'Moderate — some limitations',      icon: 'leaf-outline'   },
+        { label: 'Limited — daily tasks challenging', icon: 'walk-outline'  },
+        { label: 'Recovering from surgery/illness',   icon: 'medkit-outline'},
+      ]},
+    { key: 'concern_area', question: 'Your main', questionAccent: 'concern area?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Balance & stability',   icon: 'swap-horizontal-outline' },
+        { label: 'Knees & legs',          icon: 'walk-outline'            },
+        { label: 'Back & core',           icon: 'body-outline'            },
+        { label: 'Arms & shoulders',      icon: 'hand-left-outline'       },
+        { label: 'General weakness',      icon: 'pulse-outline'           },
+      ]},
+    { key: 'days_per_week', question: 'How many days', questionAccent: 'feel manageable?', hint: '3–4 days is plenty — rest is important', type: 'slider', min: 3, max: 5, unit: ' days' },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'medical concerns?', type: 'iconSelect', iconOptions: INJURIES_EN },
+  ],
 };
 
 const EN_DEFAULT: Step[] = [
@@ -758,6 +785,33 @@ const DE: Record<string, Step[]> = {
       ]},
     { key: 'days_per_week', question: 'Wie viele Prep-Einheiten', questionAccent: 'pro Woche?', hint: 'Zusätzlich zum eigentlichen Training', type: 'slider', min: 3, max: 6, unit: ' Tage' },
     { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+  ],
+
+  'ACTIVE AGING': [
+    { key: 'aging_goal', question: 'Was ist dir am', questionAccent: 'wichtigsten?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Selbstständig bleiben',       icon: 'walk-outline'            },
+        { label: 'Stürze vermeiden',            icon: 'shield-checkmark-outline'},
+        { label: 'Bessere Balance',             icon: 'swap-horizontal-outline' },
+        { label: 'Kraft für den Alltag',        icon: 'barbell-outline'         },
+      ]},
+    { key: 'current_mobility', question: 'Wie aktiv', questionAccent: 'bist du gerade?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Sehr aktiv — regelmäßig unterwegs',  icon: 'flash-outline'  },
+        { label: 'Mittel — einige Einschränkungen',    icon: 'leaf-outline'   },
+        { label: 'Eingeschränkt — Alltag ist anstrengend', icon: 'walk-outline'  },
+        { label: 'Nach Operation/Krankheit',            icon: 'medkit-outline'},
+      ]},
+    { key: 'concern_area', question: 'Dein Haupt-', questionAccent: 'problembereich?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Balance & Stabilität',    icon: 'swap-horizontal-outline' },
+        { label: 'Knie & Beine',            icon: 'walk-outline'            },
+        { label: 'Rücken & Rumpf',          icon: 'body-outline'            },
+        { label: 'Arme & Schultern',        icon: 'hand-left-outline'       },
+        { label: 'Allgemeine Schwäche',     icon: 'pulse-outline'           },
+      ]},
+    { key: 'days_per_week', question: 'Wie viele Tage', questionAccent: 'sind machbar?', hint: '3–4 Tage sind ideal — Erholung ist wichtig', type: 'slider', min: 3, max: 5, unit: ' Tage' },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'medizinische Bedenken?', type: 'iconSelect', iconOptions: INJURIES_DE },
   ],
 };
 

@@ -514,7 +514,13 @@ RULES:
 - Avoid exercises that conflict with their injuries
 - Keep exercise names simple and searchable (e.g. "Back Squat" not "Olympic-style back squat 3/4 depth")
 - 4-7 exercises per training day
-- Reps format: use strings like "8-10", "12", "30s", "5km" — never objects`;
+- Reps format: use strings like "8-10", "12", "30s", "5km" — never objects
+
+CATEGORY TONE GUIDANCE:
+- ACTIVE AGING: The user is 55+ and wants to stay strong and independent. Treat them as a capable adult, NOT a patient. Use empowering language ("Build lower-body strength", not "Therapeutic leg exercises"). Emphasise progression — they can get stronger. Include balance work, bone-loading (light resistance on major bones), grip strength, and functional patterns (sit-to-stand, step-ups, loaded carries). Avoid anything high-impact or that requires quick changes of direction unless the user is clearly very active. Names should sound like a gym program, not a physio clinic.
+- MOBILITY: Focus on daily doable routines of 15-25 minutes. Mix stretches, yoga poses, joint mobilisations, and foam rolling. Name poses in plain language (e.g. "Pigeon Pose", "Cat-Cow", "90/90 Hip Stretch").
+- CALISTHENICS: The user picked a target_skill — every week should build progressions toward that specific skill. Reference classic calisthenics regressions (e.g. negatives, tuck holds, band-assisted reps).
+- SPORT PREP: The user picked a target_sport — shape the program around that sport's energy systems, movement patterns, and typical injuries. Respect season_timing: Within 4 weeks = taper, 4-8 weeks = sharpening, 8-16 weeks = base + build, No competition = year-round development.`;
 
   const resp = await anthropic.messages.create({
     model: 'claude-sonnet-4-5-20250929',

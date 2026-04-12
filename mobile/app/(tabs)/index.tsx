@@ -47,6 +47,7 @@ const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = 
   flower: 'flower-outline',
   body:   'accessibility-outline',
   trophy: 'trophy-outline',
+  shield: 'shield-checkmark-outline',
 };
 
 export default function HomeTab() {

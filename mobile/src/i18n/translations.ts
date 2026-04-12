@@ -243,6 +243,7 @@ const t = {
     plan_name_MOBILITY:      'Mobility & Recovery',
     plan_name_CALISTHENICS:  'Calisthenics & Skills',
     plan_name_SPORT_PREP:    'Sport Season Prep',
+    plan_name_ACTIVE_AGING:  'Active Aging',
 
     // ── Plan descriptions (keyed by category) ────────────────────────────
     plan_desc_FAT_LOSS:      'Lose body fat by moving more and eating smarter. A mix of cardio (heart-pumping exercise) and strength (lifting) sessions done at your own pace.',
@@ -258,6 +259,7 @@ const t = {
     plan_desc_MOBILITY:      'Daily stretching, yoga-style flows, and recovery routines. Perfect as a standalone program or alongside any other plan. Undoes desk posture, unlocks tight hips, and keeps you moving well as you age.',
     plan_desc_CALISTHENICS:  'Chase specific calisthenics skills — muscle-up, handstand, front lever, one-arm pull-up. Unlike general bodyweight training, this is a progression-based program where each week brings you closer to a specific skill milestone.',
     plan_desc_SPORT_PREP:    'Sport-specific conditioning for boxing, cycling, triathlon, climbing, BJJ, and any team sport. Pick your sport, tell us when your season or competition starts, and Kyroo builds a periodised program around it.',
+    plan_desc_ACTIVE_AGING:  'Strength, balance, and daily vitality for active adults 55+. Focus on fall prevention, bone density, joint health, and staying independent as you age. Progressive and empowering — not clinical.',
 
     // ── Plan program overviews (keyed by category) ───────────────────────
     plan_detail_FAT_LOSS:
@@ -360,6 +362,14 @@ const t = {
       '• Weeks 7–9 — peak intensity and match/race simulation\n' +
       '• Week 10 — taper and peak for competition\n\n' +
       '4 sessions per week · 45–75 minutes each',
+
+    plan_detail_ACTIVE_AGING:
+      '10 weeks of strength, balance, and daily vitality — designed for active adults 55+.\n\n' +
+      '• Weeks 1–2 — gentle baseline: posture, breathing, sit-to-stand\n' +
+      '• Weeks 3–5 — balance, coordination, lower-body strength\n' +
+      '• Weeks 6–8 — bone-loading exercises, upper body, grip strength\n' +
+      '• Weeks 9–10 — integrated movement patterns for daily life\n\n' +
+      '4 sessions per week · 20–40 minutes each · no equipment needed',
   },
 
   de: {
@@ -599,6 +609,7 @@ const t = {
     plan_name_MOBILITY:      'Beweglichkeit & Regeneration',
     plan_name_CALISTHENICS:  'Calisthenics & Skills',
     plan_name_SPORT_PREP:    'Sportartenspezifische Vorbereitung',
+    plan_name_ACTIVE_AGING:  'Aktiv im Alter',
 
     // ── Planbeschreibungen (nach Kategorie) ──────────────────────────────
     plan_desc_FAT_LOSS:      'Körperfett abbauen durch mehr Bewegung und cleveres Essen. Eine Mischung aus Cardio- (Herztraining) und Krafteinheiten (Gewichtheben) — in deinem eigenen Tempo.',
@@ -614,6 +625,7 @@ const t = {
     plan_desc_MOBILITY:      'Tägliches Stretching, Yoga-Flows und Regenerationsroutinen. Perfekt als eigenständiges Programm oder als Ergänzung zu anderen Plänen. Löst Verspannungen vom Schreibtisch, öffnet enge Hüften und hält dich ein Leben lang beweglich.',
     plan_desc_CALISTHENICS:  'Erreiche konkrete Calisthenics-Skills — Muscle-up, Handstand, Front Lever, einarmige Klimmzüge. Im Gegensatz zum allgemeinen Bodyweight-Training ist das ein progressionsbasiertes Programm, bei dem dich jede Woche einem konkreten Skill näher bringt.',
     plan_desc_SPORT_PREP:    'Sportartenspezifisches Training für Boxen, Radfahren, Triathlon, Klettern, BJJ und jede Mannschaftssportart. Wähle deine Sportart, sag uns wann deine Saison oder dein Wettkampf startet — Kyroo baut ein periodisiertes Programm drumherum.',
+    plan_desc_ACTIVE_AGING:  'Kraft, Balance und Alltagsvitalität für aktive Erwachsene ab 55. Fokus auf Sturzprävention, Knochendichte, Gelenkgesundheit und Selbstständigkeit im Alter. Fortschrittlich und stärkend — nicht klinisch.',
 
     // ── Programmübersichten (nach Kategorie) ─────────────────────────────
     plan_detail_FAT_LOSS:
@@ -716,6 +728,14 @@ const t = {
       '• Wochen 7–9 — Spitzenintensität und Wettkampfsimulation\n' +
       '• Woche 10 — Taper und Formaufbau zum Wettkampf\n\n' +
       '4 Einheiten pro Woche · je 45–75 Minuten',
+
+    plan_detail_ACTIVE_AGING:
+      '10 Wochen Kraft, Balance und Alltagsvitalität — für aktive Erwachsene ab 55.\n\n' +
+      '• Wochen 1–2 — sanfter Einstieg: Haltung, Atmung, Aufstehen\n' +
+      '• Wochen 3–5 — Balance, Koordination, Beinkraft\n' +
+      '• Wochen 6–8 — Knochenaufbau-Übungen, Oberkörper, Griffkraft\n' +
+      '• Wochen 9–10 — integrierte Bewegungsmuster für den Alltag\n\n' +
+      '4 Einheiten pro Woche · je 20–40 Minuten · kein Equipment nötig',
   },
 } as const;
 

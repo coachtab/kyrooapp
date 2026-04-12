@@ -30,6 +30,7 @@ const plans = [
   { name: 'Mobility & Recovery',    description: 'Daily stretching, yoga-style flows, and recovery routines. Perfect as a standalone program or alongside any other plan. Undoes desk posture and keeps you moving well.',                                 tag: 'DAILY',     category: 'MOBILITY',        icon: 'flower', color: '#34D399', sort_order: 11 },
   { name: 'Calisthenics & Skills',  description: 'Chase specific calisthenics skills — muscle-up, handstand, front lever, one-arm pull-up. Progression-based training toward concrete skill milestones.',                                                  tag: 'SKILL',     category: 'CALISTHENICS',    icon: 'body',   color: '#EAB308', sort_order: 12 },
   { name: 'Sport Season Prep',      description: 'Sport-specific conditioning for boxing, cycling, triathlon, climbing, BJJ, and any team sport. Periodised around your season.',                                                                           tag: 'PERIODISED',category: 'SPORT PREP',      icon: 'trophy', color: '#3B82F6', sort_order: 13 },
+  { name: 'Active Aging',           description: 'Strength, balance, and daily vitality for active adults 55+. Focus on fall prevention, bone density, joint health, and staying independent. Progressive and empowering — not clinical.',                 tag: '55+',       category: 'ACTIVE AGING',    icon: 'shield', color: '#0EA5E9', sort_order: 14 },
 ];
 
 const habits = [
