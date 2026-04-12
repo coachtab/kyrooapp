@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Animated, PanResponder, Platform, Alert, Easing } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Animated, PanResponder, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -290,29 +290,10 @@ export default function PlansTab() {
   }, [loading, programs.length]);
 
   const handleStatusChange = async (progId: number, next: 'active' | 'paused') => {
-    const msg = next === 'active'
-      ? (lang === 'de' ? 'Aktuelles aktives Programm wird pausiert. Fortfahren?' : 'Your current active program will be paused. Continue?')
-      : null;
-
-    const doChange = async () => {
-      try {
-        await api.programs.setStatus(progId, next);
-        load();
-      } catch {}
-    };
-
-    if (msg) {
-      if (Platform.OS === 'web') {
-        if (window.confirm(msg)) doChange();
-      } else {
-        Alert.alert('', msg, [
-          { text: lang === 'de' ? 'Abbrechen' : 'Cancel', style: 'cancel' },
-          { text: 'OK', onPress: doChange },
-        ]);
-      }
-    } else {
-      doChange();
-    }
+    try {
+      await api.programs.setStatus(progId, next);
+      load();
+    } catch {}
   };
 
   if (loading) return (

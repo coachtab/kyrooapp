@@ -142,9 +142,7 @@ export default function ProgramScreen() {
           if (g.dx < -SWIPE_THRESHOLD && canStart) {
             Animated.timing(dragX, { toValue: -160, duration: 150, useNativeDriver: false }).start(() => {
               dragX.setValue(0);
-              changeStatus('active',
-                lang === 'de' ? 'Aktuelles aktives Programm wird pausiert. Fortfahren?' : 'Your current active program will be paused. Continue?'
-              );
+              changeStatus('active');
             });
           } else if (g.dx > SWIPE_THRESHOLD && canPause) {
             Animated.timing(dragX, { toValue: 160, duration: 150, useNativeDriver: false }).start(() => {
@@ -273,9 +271,7 @@ export default function ProgramScreen() {
           {program.status === 'queued' && (
             <TouchableOpacity
               style={[s.actionBtn, { backgroundColor: diffColor }, updating && s.disabled]}
-              onPress={() => changeStatus('active',
-                lang === 'de' ? 'Aktuelles aktives Programm wird pausiert. Fortfahren?' : 'Your current active program will be paused. Continue?'
-              )}
+              onPress={() => changeStatus('active')}
               disabled={updating}
             >
               <Ionicons name="play" size={18} color="#fff" />
@@ -295,9 +291,7 @@ export default function ProgramScreen() {
           {program.status === 'paused' && (
             <TouchableOpacity
               style={[s.actionBtn, { backgroundColor: diffColor }, updating && s.disabled]}
-              onPress={() => changeStatus('active',
-                lang === 'de' ? 'Aktuelles aktives Programm wird pausiert. Fortfahren?' : 'Your current active program will be paused. Continue?'
-              )}
+              onPress={() => changeStatus('active')}
               disabled={updating}
             >
               <Ionicons name="play" size={18} color="#fff" />

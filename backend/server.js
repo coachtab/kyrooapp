@@ -666,14 +666,8 @@ app.patch('/api/programs/:id/status', auth, async (req, res) => {
     );
     if (!check.rows.length) return res.status(404).json({ error: 'Program not found' });
 
-    if (status === 'active') {
-      // Pause the currently active program before activating this one
-      await pool.query(
-        `UPDATE programs SET status = 'paused' WHERE user_id = $1 AND status = 'active' AND id != $2`,
-        [req.user.id, req.params.id]
-      );
-    }
-
+    // Multiple programs can be active at the same time — we no longer
+    // auto-pause other actives when starting a new one.
     await pool.query(
       'UPDATE programs SET status = $1 WHERE id = $2 AND user_id = $3',
       [status, req.params.id, req.user.id]
