@@ -1,63 +1,67 @@
-import { useEffect, useState } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/api';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
 
-interface Plan {
+interface Program {
   id: number;
   name: string;
-  description: string;
-  category: string;
-  difficulty: string;
-  duration_weeks: number;
-  frequency_per_week: number;
+  category?: string;
+  icon?: string;
+  difficulty?: string;
+  total_weeks: number;
+  current_week: number;
+  status: 'active' | 'queued' | 'paused' | 'completed';
+  ai_generated?: boolean;
+  created_at: string;
 }
 
-const FILTERS = ['All', 'Hypertrophy', 'Fat Loss', 'Beginner', 'No Gym'] as const;
-type FilterKey = typeof FILTERS[number];
-const FILTER_I18N: Record<FilterKey, string> = {
-  'All':         'plans_filter_all',
-  'Hypertrophy': 'plans_filter_hypertrophy',
-  'Fat Loss':    'plans_filter_fat_loss',
-  'Beginner':    'plans_filter_beginner',
-  'No Gym':      'plans_filter_no_gym',
+const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
+  fire: 'flame-outline',
+  arm:  'barbell-outline',
+  bolt: 'flash-outline',
+  leaf: 'leaf-outline',
+  home: 'home-outline',
+  swim: 'water-outline',
+  flag: 'flag-outline',
+  run:  'walk-outline',
+  lift: 'fitness-outline',
+  zap:  'flash-outline',
 };
 
-type FilterDef = { field: 'category' | 'difficulty'; value: string };
-const FILTER_MAP: Record<string, FilterDef> = {
-  'Hypertrophy': { field: 'category',   value: 'hypertrophy' },
-  'Fat Loss':    { field: 'category',   value: 'fat loss' },
-  'Beginner':    { field: 'difficulty', value: 'beginner' },
-  'No Gym':      { field: 'category',   value: 'no gym' },
+const DIFFICULTY_COLOR: Record<string, string> = {
+  beginner:     '#4CAF50',
+  intermediate: '#F59E0B',
+  advanced:     '#E94560',
+};
+
+const STATUS_LABEL: Record<string, { en: string; de: string }> = {
+  active:    { en: 'ACTIVE',    de: 'AKTIV'       },
+  queued:    { en: 'QUEUED',    de: 'IN WARTESCHLANGE' },
+  paused:    { en: 'PAUSED',    de: 'PAUSIERT'    },
+  completed: { en: 'COMPLETED', de: 'ABGESCHLOSSEN' },
 };
 
 export default function PlansTab() {
   const router = useRouter();
-  const { tr, trPlan } = useT();
-  const [plans,   setPlans]   = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter,  setFilter]  = useState<string>('All');
+  const { lang } = useT();
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [loading,  setLoading]  = useState(true);
 
-  useEffect(() => {
-    api.plans.list()
-      .then(setPlans)
-      .catch(() => {})
+  const load = useCallback(() => {
+    setLoading(true);
+    api.programs.list()
+      .then(setPrograms)
+      .catch(() => setPrograms([]))
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = filter === 'All'
-    ? plans
-    : (() => {
-        const def = FILTER_MAP[filter];
-        if (!def) return plans;
-        return plans.filter(p =>
-          (p[def.field] ?? '').toLowerCase().includes(def.value)
-        );
-      })();
+  useFocusEffect(load);
 
   if (loading) return (
     <SafeAreaView style={s.safe} edges={['top']}>
@@ -69,60 +73,76 @@ export default function PlansTab() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
-      {/* Header — Ochy centered bold */}
       <View style={s.header}>
         <Text style={s.title}>
-          Choose your <Text style={s.accent}>plan</Text>
+          {lang === 'de' ? 'Meine ' : 'My '}
+          <Text style={s.accent}>{lang === 'de' ? 'Pläne' : 'Plans'}</Text>
         </Text>
-        <Text style={s.sub}>{tr('plans_sub')}</Text>
+        <Text style={s.sub}>
+          {lang === 'de'
+            ? 'Alle Trainingspläne, die du erstellt hast'
+            : 'All training plans you have built'}
+        </Text>
       </View>
 
-      {/* Filter chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsScroll}>
-        {FILTERS.map(cat => {
-          const active = filter === cat;
-          return (
-            <TouchableOpacity
-              key={cat}
-              style={[s.chip, active && s.chipActive]}
-              onPress={() => setFilter(cat)}
-              activeOpacity={0.75}
-            >
-              <Text style={[s.chipText, active && s.chipTextActive]}>
-                {tr(FILTER_I18N[cat as FilterKey])}
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        {programs.length === 0 ? (
+          <View style={s.emptyBlock}>
+            <Ionicons name="barbell-outline" size={48} color={colors.muted} style={{ opacity: 0.5, marginBottom: 14 }} />
+            <Text style={s.emptyTitle}>
+              {lang === 'de' ? 'Noch keine Pläne' : 'No plans yet'}
+            </Text>
+            <Text style={s.emptySub}>
+              {lang === 'de'
+                ? 'Starte auf der Startseite und erstelle deinen ersten Plan'
+                : 'Head to Home to build your first plan'}
+            </Text>
+            <TouchableOpacity style={s.emptyBtn} onPress={() => router.push('/(tabs)')} activeOpacity={0.85}>
+              <Text style={s.emptyBtnText}>
+                {lang === 'de' ? 'Plan erstellen' : 'Build a plan'}
               </Text>
             </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      {/* Plan list — Ochy clean rows */}
-      <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
-        {filtered.length === 0 ? (
-          <View style={s.emptyBlock}>
-            <Text style={s.emptyText}>{tr('plans_empty')}</Text>
           </View>
         ) : (
-          filtered.map(plan => (
-            <TouchableOpacity
-              key={plan.id}
-              style={s.planRow}
-              onPress={() => router.push(`/plan/${plan.id}` as any)}
-              activeOpacity={0.7}
-            >
-              <View style={s.planLeft}>
-                <Text style={s.planName} numberOfLines={1}>
-                  {trPlan(plan.category, 'name', plan.name)}
-                </Text>
-                <Text style={s.planMeta}>
-                  {plan.category?.toUpperCase() || 'GENERAL'}
-                  {'  ·  '}
-                  {plan.duration_weeks} weeks · {plan.frequency_per_week}×/week
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-            </TouchableOpacity>
-          ))
+          programs.map(prog => {
+            const iconName = ICON_MAP[prog.icon || ''] || 'barbell-outline';
+            const diffColor = DIFFICULTY_COLOR[(prog.difficulty || '').toLowerCase()] || colors.accent;
+            const statusLabel = STATUS_LABEL[prog.status]?.[lang] || prog.status.toUpperCase();
+            const isActive = prog.status === 'active';
+            return (
+              <TouchableOpacity
+                key={prog.id}
+                style={[s.programCard, { borderColor: diffColor }]}
+                activeOpacity={0.8}
+                onPress={() => isActive ? router.push('/program') : undefined}
+                disabled={!isActive}
+              >
+                <View style={s.programHead}>
+                  <Ionicons name={iconName} size={22} color={diffColor} />
+                  <Text style={s.programName} numberOfLines={1}>{prog.name}</Text>
+                  {prog.ai_generated && <Ionicons name="sparkles" size={14} color={diffColor} />}
+                </View>
+
+                <View style={s.programMeta}>
+                  <Text style={[s.programStatus, { color: diffColor }]}>{statusLabel}</Text>
+                  <Text style={s.programDot}>·</Text>
+                  <Text style={s.programWeeks}>
+                    {lang === 'de'
+                      ? `Woche ${prog.current_week}/${prog.total_weeks}`
+                      : `Week ${prog.current_week}/${prog.total_weeks}`}
+                  </Text>
+                </View>
+
+                {/* Progress bar */}
+                <View style={s.progressTrack}>
+                  <View style={[
+                    s.progressFill,
+                    { width: `${Math.min(100, (prog.current_week / prog.total_weeks) * 100)}%` as any, backgroundColor: diffColor }
+                  ]} />
+                </View>
+              </TouchableOpacity>
+            );
+          })
         )}
       </ScrollView>
     </SafeAreaView>
@@ -130,30 +150,31 @@ export default function PlansTab() {
 }
 
 const s = StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: colors.bg },
+  safe:   { flex: 1, backgroundColor: '#000' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  // Header
-  header: { paddingHorizontal: 28, paddingTop: 40, paddingBottom: 16 },
-  title:  { fontSize: 28, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  header: { paddingHorizontal: 28, paddingTop: 24, paddingBottom: 16 },
+  title:  { fontSize: 28, fontWeight: '800', color: colors.text },
   accent: { color: colors.accent },
-  sub:    { fontSize: 14, color: colors.muted, textAlign: 'center', marginTop: 6 },
+  sub:    { fontSize: 14, color: colors.muted, marginTop: 6 },
 
-  // Chips
-  chipsScroll:  { paddingHorizontal: 24, gap: 8, paddingBottom: 16 },
-  chip:         { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.border },
-  chipActive:   { backgroundColor: colors.cta, borderColor: colors.cta },
-  chipText:     { fontSize: 13, fontWeight: '600', color: colors.muted },
-  chipTextActive:{ color: colors.ctaText, fontWeight: '700' },
+  scroll: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
 
-  // List
-  list:       { paddingHorizontal: 28, paddingBottom: 40 },
-  emptyBlock: { alignItems: 'center', paddingTop: 60 },
-  emptyText:  { color: colors.muted, fontSize: 15 },
+  // Empty state
+  emptyBlock:   { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 20 },
+  emptyTitle:   { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 6 },
+  emptySub:     { fontSize: 14, color: colors.muted, textAlign: 'center', marginBottom: 24, lineHeight: 21 },
+  emptyBtn:     { backgroundColor: colors.cta, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
+  emptyBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
 
-  // Plan row — Ochy list item
-  planRow:  { flexDirection: 'row', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: colors.border },
-  planLeft: { flex: 1 },
-  planName: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 4 },
-  planMeta: { fontSize: 12, color: colors.muted, letterSpacing: 0.3 },
+  // Program card
+  programCard:    { backgroundColor: '#0d0d0d', borderRadius: 14, borderWidth: 1.5, padding: 16, gap: 10 },
+  programHead:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  programName:    { flex: 1, fontSize: 16, fontWeight: '700', color: colors.text },
+  programMeta:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  programStatus:  { fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  programDot:     { fontSize: 12, color: colors.muted },
+  programWeeks:   { fontSize: 12, color: colors.muted },
+  progressTrack:  { height: 4, backgroundColor: '#1a1a1a', borderRadius: 2, overflow: 'hidden' },
+  progressFill:   { height: 4, borderRadius: 2 },
 });

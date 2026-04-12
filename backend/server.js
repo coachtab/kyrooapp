@@ -6,6 +6,11 @@ const jwt        = require('jsonwebtoken');
 const crypto     = require('crypto');
 const nodemailer  = require('nodemailer');
 const compression = require('compression');
+const Anthropic   = require('@anthropic-ai/sdk');
+
+const anthropic = process.env.ANTHROPIC_API_KEY
+  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  : null;
 const { Pool }   = require('pg');
 
 const app  = express();
@@ -379,7 +384,7 @@ app.get('/api/plans/:id', async (req, res) => {
 
 // ── Routes: Questionnaire ────────────────────────────────────────────────────
 app.post('/api/questionnaire', auth, async (req, res) => {
-  // Accept both legacy web fields and new mobile form fields
+  const body = req.body;
   const {
     plan_id, planId,
     goal, primary_goal,
@@ -388,15 +393,28 @@ app.post('/api/questionnaire', auth, async (req, res) => {
     session_mins, session_duration,
     equipment, injuries, motivation, commitment,
     gender, age, weight_kg, height_cm,
-  } = req.body;
+    training_days,
+  } = body;
+
+  // Everything else (plan-specific answers) goes into extra_answers JSONB
+  const knownKeys = new Set([
+    'plan_id','planId','goal','primary_goal','experience','fitness_level',
+    'days_per_week','training_frequency','session_mins','session_duration',
+    'equipment','injuries','motivation','commitment',
+    'gender','age','weight_kg','height_cm','training_days',
+  ]);
+  const extraAnswers = {};
+  for (const [k, v] of Object.entries(body)) {
+    if (!knownKeys.has(k)) extraAnswers[k] = v;
+  }
 
   try {
     const { rows } = await pool.query(
       `INSERT INTO questionnaires
          (user_id, plan_id, primary_goal, fitness_level, training_frequency, session_duration,
           experience, days_per_week, session_mins, equipment, injuries, motivation, commitment,
-          gender, age, weight_kg, height_cm)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+          gender, age, weight_kg, height_cm, training_days, extra_answers)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
        RETURNING id`,
       [
         req.user.id,
@@ -416,6 +434,8 @@ app.post('/api/questionnaire', auth, async (req, res) => {
         age        || null,
         weight_kg  || null,
         height_cm  || null,
+        Array.isArray(training_days) ? training_days : null,
+        JSON.stringify(extraAnswers),
       ]
     );
     res.json({ id: rows[0].id });
@@ -424,6 +444,79 @@ app.post('/api/questionnaire', auth, async (req, res) => {
     res.status(500).json({ error: 'Failed to save questionnaire' });
   }
 });
+
+// ── AI program generation via Claude ────────────────────────────────────────
+async function generateProgramWithClaude(q) {
+  if (!anthropic) throw new Error('Anthropic API key not configured');
+
+  const extras = q.extra_answers || {};
+  const trainingDays = Array.isArray(q.training_days) ? q.training_days.join(', ') : 'any day';
+  const totalWeeks = q.total_weeks || 12;
+
+  const userProfile = `
+USER PROFILE
+- Gender: ${q.gender || 'unspecified'}
+- Height: ${q.height_cm || 'unspecified'} cm
+- Weight: ${q.weight_kg || 'unspecified'} kg
+- Fitness level: ${q.fitness_level || extras.fitness_level || 'unspecified'}
+
+PLAN TYPE: ${q.category || 'general fitness'}
+TRAINING FREQUENCY: ${q.days_per_week || 3} days per week
+TRAINING DAYS: ${trainingDays}
+TOTAL PROGRAM LENGTH: ${totalWeeks} weeks
+
+EQUIPMENT: ${extras.equipment || 'body weight only'}
+INJURIES / LIMITATIONS: ${extras.injuries || 'none'}
+
+ADDITIONAL ANSWERS (plan-specific):
+${Object.entries(extras)
+  .filter(([k]) => !['equipment','injuries','fitness_level'].includes(k))
+  .map(([k, v]) => `- ${k}: ${v}`)
+  .join('\n')}
+`.trim();
+
+  const systemPrompt = `You are a world-class personal trainer and exercise physiologist. You create safe, effective, highly personalised training programs.
+
+Output MUST be valid JSON matching this exact schema:
+{
+  "name": "Program name (short, motivating)",
+  "overview": "One paragraph explaining the program approach",
+  "days": [
+    {
+      "day_name": "Monday|Tuesday|... or Rest Day",
+      "focus": "Short focus label (e.g. 'Push Day', 'Long Run', 'Active Recovery')",
+      "exercises": [
+        { "name": "Exercise name", "sets": 4, "reps": "8-10" }
+      ]
+    }
+  ]
+}
+
+RULES:
+- Generate exactly 7 entries in "days" — one for each day of the week, in order Mon-Sun
+- For rest/off days, use "focus": "Rest Day" and exercises: [{ "name": "Rest or light walk", "sets": 1, "reps": "-" }]
+- Training days must match the user's selected TRAINING DAYS exactly
+- Tailor intensity to their fitness level (beginner/intermediate/advanced/elite)
+- Respect equipment constraints
+- Avoid exercises that conflict with their injuries
+- Keep exercise names simple and searchable (e.g. "Back Squat" not "Olympic-style back squat 3/4 depth")
+- 4-7 exercises per training day
+- Reps format: use strings like "8-10", "12", "30s", "5km" — never objects`;
+
+  const resp = await anthropic.messages.create({
+    model: 'claude-sonnet-4-5-20250929',
+    max_tokens: 4096,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: `Build a personalised weekly program for this user:\n\n${userProfile}` }],
+  });
+
+  const text = resp.content.find(c => c.type === 'text')?.text || '';
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Claude did not return JSON');
+  const parsed = JSON.parse(jsonMatch[0]);
+  if (!parsed.days || !Array.isArray(parsed.days)) throw new Error('Claude JSON missing days array');
+  return parsed;
+}
 
 // ── Routes: Programs ─────────────────────────────────────────────────────────
 app.post('/api/programs/generate', auth, async (req, res) => {
@@ -441,34 +534,31 @@ app.post('/api/programs/generate', auth, async (req, res) => {
     if (!qRes.rows.length) return res.status(404).json({ error: 'Questionnaire not found' });
 
     const q = qRes.rows[0];
+    const category = q.category || 'GENERAL';
+    const totalWeeks = q.total_weeks || 12;
 
-    // Map goal/experience to template category
-    const goalToCategory = {
-      'Build muscle': 'HYPERTROPHY', 'Lose fat': 'FAT LOSS',
-      'Improve fitness': 'FAT LOSS',  'Stay active': 'FIRST STEPS',
-      // mobile form option strings (with emoji prefix stripped)
-      'Build muscle — get bigger and stronger':    'HYPERTROPHY',
-      'Lose fat — slim down and feel lighter':     'FAT LOSS',
-      'Get fitter — more energy and stamina':      'FAT LOSS',
-      'Stay active — move more, feel good':        'FIRST STEPS',
-    };
-    const category = q.category || goalToCategory[q.primary_goal] || 'HYPERTROPHY';
-
-    // Default weeks by category when no plan is chosen
-    const defaultWeeksByCategory = {
-      'HYPERTROPHY': 16,
-      'FAT LOSS':    10,
-      'FIRST STEPS':  8,
-      'NO GYM':       6,
-    };
-    // Use the plan's total_weeks if a plan was picked, otherwise derive from category
-    const totalWeeks = q.total_weeks || defaultWeeksByCategory[category] || 12;
-
-    // Map days_per_week to frequency bucket
-    const daysNum = q.days_per_week;
-    const frequency = daysNum <= 3 ? '2-3 days' : daysNum >= 6 ? '6+ days' : (q.training_frequency || '4-5 days');
-
-    const programName = q.plan_name || `${category} Program`;
+    // Try Claude first, fall back to template if it fails
+    let programName, days, aiGenerated = false;
+    try {
+      const aiPlan = await generateProgramWithClaude(q);
+      programName = aiPlan.name || q.plan_name || `${category} Program`;
+      days = aiPlan.days.map(d => ({
+        day: d.day_name || d.day || 'Day',
+        focus: d.focus || '',
+        exercises: Array.isArray(d.exercises) ? d.exercises.map(e => ({
+          name: e.name || 'Exercise',
+          sets: Number(e.sets) || 1,
+          reps: typeof e.reps === 'string' ? e.reps : String(e.reps || '-'),
+        })) : [],
+      }));
+      aiGenerated = true;
+    } catch (aiErr) {
+      console.error('[generate] Claude failed, falling back to template:', aiErr.message);
+      programName = q.plan_name || `${category} Program`;
+      const daysNum = q.days_per_week;
+      const frequency = daysNum <= 3 ? '2-3 days' : daysNum >= 6 ? '6+ days' : (q.training_frequency || '4-5 days');
+      days = buildWeeks(category, frequency, totalWeeks);
+    }
 
     // Auto-assign status: 'active' if none exists, 'queued' otherwise
     const activeCheck = await pool.query(
@@ -477,16 +567,12 @@ app.post('/api/programs/generate', auth, async (req, res) => {
     );
     const autoStatus = activeCheck.rows.length ? 'queued' : 'active';
 
-    // Create program record
     const progRes = await pool.query(
-      `INSERT INTO programs (user_id, plan_id, questionnaire_id, total_weeks, name, status)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
-      [req.user.id, q.plan_id, questionnaireId, totalWeeks, programName, autoStatus]
+      `INSERT INTO programs (user_id, plan_id, questionnaire_id, total_weeks, name, status, ai_generated)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+      [req.user.id, q.plan_id, questionnaireId, totalWeeks, programName, autoStatus, aiGenerated]
     );
     const programId = progRes.rows[0].id;
-
-    // Generate weekly schedule from template
-    const days = buildWeeks(category, frequency, totalWeeks);
 
     for (let i = 0; i < days.length; i++) {
       const d = days[i];
@@ -497,7 +583,7 @@ app.post('/api/programs/generate', auth, async (req, res) => {
       );
     }
 
-    res.json({ id: programId });
+    res.json({ id: programId, ai_generated: aiGenerated });
   } catch (err) {
     console.error('[generate]', err.message);
     res.status(500).json({ error: 'Program generation failed' });
@@ -517,8 +603,8 @@ function parseExercise(str) {
 app.get('/api/programs', auth, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT p.id, COALESCE(p.name, pl.name) AS name, pl.category,
-              p.total_weeks, p.current_week, p.status, p.created_at
+      `SELECT p.id, COALESCE(p.name, pl.name) AS name, pl.category, pl.icon, pl.difficulty,
+              p.total_weeks, p.current_week, p.status, p.ai_generated, p.created_at
        FROM programs p
        LEFT JOIN plans pl ON pl.id = p.plan_id
        WHERE p.user_id = $1
@@ -774,6 +860,10 @@ pool.connect()
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_programs_user_status ON programs(user_id, status)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_program_days_program ON program_days(program_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_mood_logs_user_date ON mood_logs(user_id, logged_date)`);
+    // AI questionnaire answers + training days
+    await pool.query(`ALTER TABLE questionnaires ADD COLUMN IF NOT EXISTS extra_answers JSONB`);
+    await pool.query(`ALTER TABLE questionnaires ADD COLUMN IF NOT EXISTS training_days TEXT[]`);
+    await pool.query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS ai_generated BOOLEAN NOT NULL DEFAULT false`);
     console.log('Database connected.');
   })
   .catch(err => console.error('Database connection failed:', err.message));
