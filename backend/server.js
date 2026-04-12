@@ -598,11 +598,24 @@ app.post('/api/programs/generate', auth, async (req, res) => {
 });
 
 // Parse "Bench Press 4x8" -> { name: "Bench Press", sets: 4, reps: "8" }
-function parseExercise(str) {
-  const m = str.match(/^(.+?)\s+(\d+)[x×](\S+)$/);
+// Handles both strings (legacy template format) and objects (AI-generated)
+function parseExercise(value) {
+  // AI-generated exercises come through as full objects — pass through
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return {
+      name: String(value.name || 'Exercise'),
+      sets: Number(value.sets) || 1,
+      reps: value.reps != null ? String(value.reps) : '-',
+      rest: value.rest ? String(value.rest) : undefined,
+      notes: value.notes ? String(value.notes) : undefined,
+    };
+  }
+  // Legacy string format from template-based programs
+  if (typeof value !== 'string') return { name: 'Exercise', sets: 1, reps: '-' };
+  const m = value.match(/^(.+?)\s+(\d+)[x×](\S+)$/);
   if (m) return { name: m[1].trim(), sets: parseInt(m[2]), reps: m[3] };
   // e.g. "Rest day" or "20 min walk"
-  return { name: str, sets: 1, reps: '-' };
+  return { name: value, sets: 1, reps: '-' };
 }
 
 // ── Routes: Programs list + status ───────────────────────────────────────────
