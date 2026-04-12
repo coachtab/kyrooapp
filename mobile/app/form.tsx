@@ -258,10 +258,11 @@ const EN: Record<string, Step[]> = {
       ]},
     { key: 'stroke', question: 'Your main', questionAccent: 'stroke?', type: 'iconSelect',
       iconOptions: [
-        { label: 'Freestyle',     icon: 'water-outline'    },
-        { label: 'Breaststroke',  icon: 'repeat-outline'   },
+        { label: 'Freestyle',     icon: 'water-outline'     },
+        { label: 'Breaststroke',  icon: 'repeat-outline'    },
         { label: 'Backstroke',    icon: 'arrow-back-outline'},
-        { label: 'Mix of all',    icon: 'shuffle-outline'  },
+        { label: 'Dolphin (butterfly)', icon: 'fish-outline' },
+        { label: 'Mix of all',    icon: 'shuffle-outline'   },
       ]},
     { key: 'days_per_week', question: 'How many pool sessions', questionAccent: 'per week?', type: 'slider', min: 2, max: 5, unit: ' days' },
     { key: 'pool_access',  question: 'What pool can you', questionAccent: 'access?', type: 'iconSelect',
@@ -494,10 +495,11 @@ const DE: Record<string, Step[]> = {
       ]},
     { key: 'stroke', question: 'Dein Haupt-', questionAccent: 'Stil?', type: 'iconSelect',
       iconOptions: [
-        { label: 'Kraul',         icon: 'water-outline'     },
-        { label: 'Brust',         icon: 'repeat-outline'    },
-        { label: 'Rücken',        icon: 'arrow-back-outline'},
-        { label: 'Mix aus allem', icon: 'shuffle-outline'   },
+        { label: 'Kraul',                icon: 'water-outline'     },
+        { label: 'Brust',                icon: 'repeat-outline'    },
+        { label: 'Rücken',               icon: 'arrow-back-outline'},
+        { label: 'Delphin (Schmetterling)', icon: 'fish-outline'   },
+        { label: 'Mix aus allem',        icon: 'shuffle-outline'   },
       ]},
     { key: 'days_per_week', question: 'Wie viele Pool-Einheiten', questionAccent: 'pro Woche?', type: 'slider', min: 2, max: 5, unit: ' Tage' },
     { key: 'pool_access',  question: 'Welches Becken', questionAccent: 'hast du?', type: 'iconSelect',
@@ -637,10 +639,15 @@ export default function Form() {
   const storedHeight = user?.height_cm ?? null;
   const storedWeight = user?.weight_kg ?? null;
 
+  // Slider initial positions — start at the minimum so user can see the value
+  // increasing as they slide up
+  const HEIGHT_MIN = 140;
+  const WEIGHT_MIN = 40;
+
   const [step,        setStep]        = useState(0);
   const [answers,     setAnswers]     = useState<Record<string, string | number>>({
-    height_cm: storedHeight ?? 170,
-    weight_kg: storedWeight ?? 70,
+    height_cm: storedHeight ?? HEIGHT_MIN,
+    weight_kg: storedWeight ?? WEIGHT_MIN,
     ...(user?.gender ? { gender: user.gender } : {}),
   });
   const [loading,     setLoading]     = useState(false);
@@ -833,11 +840,9 @@ export default function Form() {
             </View>
             <View style={s.measureDisplay}>
               <Text style={[s.measureVal, !touchedKeys.has('height_cm') && { color: colors.muted }]}>
-                {!touchedKeys.has('height_cm')
-                  ? '—'
-                  : heightUnit === 'cm'
-                    ? Math.round(answers.height_cm as number)
-                    : `${Math.floor((answers.height_cm as number) / 30.48)}'${Math.round(((answers.height_cm as number) / 2.54) % 12)}"`}
+                {heightUnit === 'cm'
+                  ? Math.round(answers.height_cm as number)
+                  : `${Math.floor((answers.height_cm as number) / 30.48)}'${Math.round(((answers.height_cm as number) / 2.54) % 12)}"`}
               </Text>
               <Text style={s.measureUnit}>{heightUnit}</Text>
             </View>
@@ -867,11 +872,9 @@ export default function Form() {
             </View>
             <View style={s.measureDisplay}>
               <Text style={[s.measureVal, !touchedKeys.has('weight_kg') && { color: colors.muted }]}>
-                {!touchedKeys.has('weight_kg')
-                  ? '—'
-                  : weightUnit === 'kg'
-                    ? Math.round(answers.weight_kg as number)
-                    : Math.round((answers.weight_kg as number) * 2.20462)}
+                {weightUnit === 'kg'
+                  ? Math.round(answers.weight_kg as number)
+                  : Math.round((answers.weight_kg as number) * 2.20462)}
               </Text>
               <Text style={s.measureUnit}>{weightUnit}</Text>
             </View>
