@@ -475,6 +475,11 @@ export default function Form() {
         <View style={[s.progressFill, { width: `${((step + 1) / total) * 100}%` as any, backgroundColor: diffColor }]} />
       </View>
 
+      {/* Close button — cancel plan creation */}
+      <TouchableOpacity style={s.close} onPress={() => router.back()} hitSlop={12}>
+        <Ionicons name="close" size={26} color={colors.muted} />
+      </TouchableOpacity>
+
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {/* Question — Ochy style with accent word */}
         <Text style={s.question}>
@@ -642,7 +647,8 @@ const s = StyleSheet.create({
   safe:             { flex: 1, backgroundColor: colors.bg },
   progressBar:      { height: 3, backgroundColor: colors.border },
   progressFill:     { height: 3, backgroundColor: colors.accent },
-  scroll:           { padding: 24, paddingTop: 20, paddingBottom: 48 },
+  close:            { position: 'absolute', top: 14, right: 20, zIndex: 10, padding: 6 },
+  scroll:           { padding: 24, paddingTop: 48, paddingBottom: 48 },
   question:         { fontSize: 24, fontWeight: '800', color: colors.text, lineHeight: 32, marginBottom: 6, textAlign: 'center' },
   questionAccent:   {},
   hint:             { fontSize: 13, color: colors.muted, lineHeight: 18, marginBottom: 24, textAlign: 'center' },
