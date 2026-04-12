@@ -87,7 +87,9 @@ function SwipeableProgramCard({
   const demoOpacity = useRef(new Animated.Value(0)).current;
   const SWIPE_THRESHOLD = 70;
 
-  const canStart = prog.status === 'queued' || prog.status === 'paused';
+  // Any non-completed plan can be started (active plans stay active — no-op).
+  // Only currently-active plans can be paused.
+  const canStart = prog.status !== 'completed';
   const canPause = prog.status === 'active';
 
   // Demo animation — glove hand swipes left-right to teach the gesture

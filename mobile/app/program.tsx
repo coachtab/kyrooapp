@@ -122,7 +122,9 @@ export default function ProgramScreen() {
     const dragX = useRef(new Animated.Value(0)).current;
     const SWIPE_THRESHOLD = 80;
 
-    const canStart = program.status === 'queued' || program.status === 'paused';
+    // Any non-completed plan can be started (active plans stay active — no-op).
+    // Only currently-active plans can be paused.
+    const canStart = program.status !== 'completed';
     const canPause = program.status === 'active';
 
     const panResponder = useRef(
