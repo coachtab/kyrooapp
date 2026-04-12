@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Alert, Animated, PanResponder } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Alert, Animated, PanResponder, RefreshControl } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { api, ProgramStatus } from '@/api';
+import { api, ProgramStatus, clearApiCache } from '@/api';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
 import { translateFocus, translateDayName, translateExercise, translateRest } from '@/i18n/programTranslations';
@@ -69,21 +69,33 @@ export default function ProgramScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
   const { tr, lang } = useT();
-  const [program,  setProgram]  = useState<Program | null>(null);
-  const [loading,  setLoading]  = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [openDay,  setOpenDay]  = useState<number | null>(0);
+  const [program,    setProgram]    = useState<Program | null>(null);
+  const [loading,    setLoading]    = useState(true);
+  const [updating,   setUpdating]   = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [openDay,    setOpenDay]    = useState<number | null>(0);
+
+  const fetchProgram = useCallback(async () => {
+    try {
+      const p = params.id
+        ? await api.programs.get(Number(params.id))
+        : await api.programs.current();
+      setProgram(p);
+    } catch {
+      setProgram(null);
+    }
+  }, [params.id]);
 
   const load = useCallback(() => {
     setLoading(true);
-    const fetcher = params.id
-      ? api.programs.get(Number(params.id))
-      : api.programs.current();
-    fetcher
-      .then(setProgram)
-      .catch(() => setProgram(null))
-      .finally(() => setLoading(false));
-  }, [params.id]);
+    fetchProgram().finally(() => setLoading(false));
+  }, [fetchProgram]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    clearApiCache();
+    try { await fetchProgram(); } finally { setRefreshing(false); }
+  }, [fetchProgram]);
 
   useEffect(load, [load]);
 
@@ -199,7 +211,11 @@ export default function ProgramScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />}
+      >
 
         {/* Header */}
         <View style={s.header}>

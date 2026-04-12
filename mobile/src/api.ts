@@ -30,6 +30,11 @@ export function setTokenCache(token: string | null) {
   _tokenLoaded = true;
 }
 
+// Invalidate the GET response cache — used by pull-to-refresh
+export function clearApiCache() {
+  _cache.clear();
+}
+
 // ── Request deduplication + GET cache ────────────────────────────────────────
 const _inflight = new Map<string, Promise<any>>();
 const _cache = new Map<string, { data: any; ts: number }>();

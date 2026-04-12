@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { api } from '@/api';
+import { api, clearApiCache } from '@/api';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
 
@@ -23,16 +23,29 @@ const MOODS = [
 
 export default function TrackingTab() {
   const { tr, lang } = useT();
-  const [data,    setData]    = useState<TrackData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data,       setData]       = useState<TrackData | null>(null);
+  const [loading,    setLoading]    = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const d = await api.tracking.today();
+      setData(d);
+    } catch {
+      setData({ habits: [], streak: 0 });
+    }
+  }, []);
 
   const load = useCallback(() => {
     setLoading(true);
-    api.tracking.today()
-      .then(setData)
-      .catch(() => setData({ habits: [], streak: 0 }))
-      .finally(() => setLoading(false));
-  }, []);
+    fetchData().finally(() => setLoading(false));
+  }, [fetchData]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    clearApiCache();
+    try { await fetchData(); } finally { setRefreshing(false); }
+  }, [fetchData]);
 
   useFocusEffect(load);
 
@@ -62,7 +75,11 @@ export default function TrackingTab() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />}
+      >
 
         {/* Header — Ochy centered bold */}
         <Text style={s.title}>

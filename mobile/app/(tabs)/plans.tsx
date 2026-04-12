@@ -1,12 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Animated, PanResponder, Easing } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Animated, PanResponder, Easing, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Line } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from '@/api';
+import { api, clearApiCache } from '@/api';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
 
@@ -266,17 +266,30 @@ const cs = StyleSheet.create({
 export default function PlansTab() {
   const router = useRouter();
   const { lang } = useT();
-  const [programs, setPrograms] = useState<Program[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [showDemo, setShowDemo] = useState(false);
+  const [programs,   setPrograms]   = useState<Program[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showDemo,   setShowDemo]   = useState(false);
+
+  const fetchPrograms = useCallback(async () => {
+    try {
+      const list = await api.programs.list();
+      setPrograms(list);
+    } catch {
+      setPrograms([]);
+    }
+  }, []);
 
   const load = useCallback(() => {
     setLoading(true);
-    api.programs.list()
-      .then(setPrograms)
-      .catch(() => setPrograms([]))
-      .finally(() => setLoading(false));
-  }, []);
+    fetchPrograms().finally(() => setLoading(false));
+  }, [fetchPrograms]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    clearApiCache();
+    try { await fetchPrograms(); } finally { setRefreshing(false); }
+  }, [fetchPrograms]);
 
   useFocusEffect(load);
 
@@ -340,7 +353,11 @@ export default function PlansTab() {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />}
+        >
           {programs.map((prog, index) => {
             const iconName = ICON_MAP[prog.icon || ''] || 'barbell-outline';
             const diffColor = DIFFICULTY_COLOR[(prog.difficulty || '').toLowerCase()] || colors.accent;

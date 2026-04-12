@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { api } from '@/api';
+import { api, clearApiCache } from '@/api';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
 
@@ -53,21 +53,31 @@ const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = 
 export default function HomeTab() {
   const router = useRouter();
   const { tr } = useT();
-  const [data,    setData]    = useState<TodayData | null>(null);
-  const [plans,   setPlans]   = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [data,       setData]       = useState<TodayData | null>(null);
+  const [plans,      setPlans]      = useState<Plan[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    const [t, p] = await Promise.all([
+      api.tracking.today().catch(() => ({ habits: [], streak: 0 })),
+      api.plans.list().catch(() => []),
+    ]);
+    setData(t as TodayData);
+    const sorted = (p as Plan[]).slice().sort((a, b) => a.name.localeCompare(b.name));
+    setPlans(sorted);
+  }, []);
 
   const load = useCallback(() => {
     setLoading(true);
-    Promise.all([
-      api.tracking.today().catch(() => ({ habits: [], streak: 0 })),
-      api.plans.list().catch(() => []),
-    ]).then(([t, p]) => {
-      setData(t as TodayData);
-      const sorted = (p as Plan[]).slice().sort((a, b) => a.name.localeCompare(b.name));
-      setPlans(sorted);
-    }).finally(() => setLoading(false));
-  }, []);
+    fetchData().finally(() => setLoading(false));
+  }, [fetchData]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    clearApiCache();
+    try { await fetchData(); } finally { setRefreshing(false); }
+  }, [fetchData]);
 
   useFocusEffect(load);
 
@@ -83,7 +93,11 @@ export default function HomeTab() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />}
+      >
 
         {hasProgram ? (
           <>
