@@ -915,7 +915,7 @@ export default function Form() {
           <View style={s.sliderWrap}>
             <View style={s.sliderDisplay}>
               <Text style={[s.sliderVal, !touchedKeys.has(current.key) && { color: colors.muted }]}>
-                {touchedKeys.has(current.key) ? sliderVal : '—'}
+                {sliderVal}
               </Text>
               <Text style={s.sliderUnit}>{current.unit}</Text>
             </View>
