@@ -117,19 +117,19 @@ export default function HomeTab() {
             </Text>
             <Text style={s.sub}>{tr('home_choose_plan')}</Text>
 
-            {/* Plan rows — left border colored by difficulty */}
+            {/* Plan rows — full border colored by difficulty */}
             <View style={s.planList}>
               {plans.map(plan => {
                 const iconName = ICON_MAP[plan.icon] || 'barbell-outline';
-                const diffColor = DIFFICULTY_COLOR[(plan.difficulty || '').toLowerCase()] || colors.muted;
+                const diffColor = DIFFICULTY_COLOR[(plan.difficulty || '').toLowerCase()] || colors.border;
                 return (
                   <TouchableOpacity
                     key={plan.id}
-                    style={[s.planRow, { borderLeftColor: diffColor }]}
+                    style={[s.planRow, { borderColor: diffColor }]}
                     activeOpacity={0.7}
                     onPress={() => router.push(`/plan/${plan.id}` as any)}
                   >
-                    <Ionicons name={iconName} size={20} color={colors.muted} style={s.planRowIcon} />
+                    <Ionicons name={iconName} size={20} color={diffColor} style={s.planRowIcon} />
                     <Text style={s.planRowName} numberOfLines={2}>{plan.name}</Text>
                     <Ionicons name="chevron-forward" size={18} color={colors.muted} />
                   </TouchableOpacity>
@@ -154,16 +154,15 @@ const s = StyleSheet.create({
   headlineAccent: { color: colors.accent },
   sub:            { fontSize: 15, color: colors.muted, marginBottom: 32 },
 
-  // Plan rows — Ochy clean list with difficulty-colored left border
+  // Plan rows — full border colored by difficulty
   planList:    { gap: 10 },
   planRow:     {
     flexDirection:   'row',
     alignItems:      'center',
     paddingVertical: 16,
-    paddingLeft:     14,
-    paddingRight:    12,
-    borderLeftWidth: 3,
-    borderRadius:    8,
+    paddingHorizontal: 14,
+    borderWidth:     1.5,
+    borderRadius:    12,
     backgroundColor: '#0d0d0d',
   },
   planRowIcon: { width: 28, marginRight: 14 },
