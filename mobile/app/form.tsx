@@ -103,13 +103,30 @@ interface Step {
   question: string;
   questionAccent?: string;
   hint?:    string;
-  type:     'select' | 'slider' | 'iconSelect' | 'levelSelect' | 'height' | 'weight';
+  type:     'select' | 'slider' | 'iconSelect' | 'levelSelect' | 'height' | 'weight' | 'daySelect';
   options?: string[];
   iconOptions?: StepOption[];
   min?:     number;
   max?:     number;
   unit?:    string;
 }
+
+// ── Day selection step — inserted after days_per_week in every plan ────────
+const DAY_SELECT_EN: Step = {
+  key: 'training_days',
+  question: 'Now pick your',
+  questionAccent: 'training days',
+  type: 'daySelect',
+};
+const DAY_SELECT_DE: Step = {
+  key: 'training_days',
+  question: 'Wähle jetzt deine',
+  questionAccent: 'Trainingstage',
+  type: 'daySelect',
+};
+
+const DAY_LABELS_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAY_LABELS_DE = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 
 // ── Shared building blocks ───────────────────────────────────────────────────
 const INJURIES_EN: StepOption[] = [
@@ -602,7 +619,17 @@ export default function Form() {
   const defaultSteps = lang === 'de' ? DE_DEFAULT : EN_DEFAULT;
   const categorySteps: Step[] = (category ? byCategory[category] : undefined) ?? defaultSteps;
   const intro = lang === 'de' ? INTRO_DE : INTRO_EN;
-  const STEPS: Step[] = [...intro, ...categorySteps];
+
+  // Inject "pick training days" step right after days_per_week
+  const daySelectStep = lang === 'de' ? DAY_SELECT_DE : DAY_SELECT_EN;
+  const withDaySelect: Step[] = [];
+  for (const s of categorySteps) {
+    withDaySelect.push(s);
+    if (s.key === 'days_per_week') withDaySelect.push(daySelectStep);
+  }
+  const STEPS: Step[] = [...intro, ...withDaySelect];
+
+  const dayLabels = lang === 'de' ? DAY_LABELS_DE : DAY_LABELS_EN;
 
   const [step,        setStep]        = useState(0);
   const [answers,     setAnswers]     = useState<Record<string, string | number>>({ height_cm: 170, weight_kg: 70 });
@@ -715,6 +742,58 @@ export default function Form() {
             })}
           </View>
         )}
+
+        {/* Day select — pick specific training days, constrained to days_per_week count */}
+        {current.type === 'daySelect' && (() => {
+          const needed = (answers.days_per_week as number) ?? 3;
+          const selected: string[] = (answers.training_days as unknown as string[]) ?? [];
+          const remaining = needed - selected.length;
+          return (
+            <>
+              <Text style={[s.dayCounter, { color: diffColor }]}>
+                {remaining > 0
+                  ? (lang === 'de'
+                      ? `Wähle noch ${remaining} ${remaining === 1 ? 'Tag' : 'Tage'} (${selected.length}/${needed})`
+                      : `Pick ${remaining} more ${remaining === 1 ? 'day' : 'days'} (${selected.length}/${needed})`)
+                  : (lang === 'de'
+                      ? `Perfekt! ${needed} Tage gewählt`
+                      : `Perfect! ${needed} days selected`)
+                }
+              </Text>
+              <View style={s.dayList}>
+                {dayLabels.map(day => {
+                  const active = selected.includes(day);
+                  const locked = !active && remaining <= 0;
+                  return (
+                    <TouchableOpacity
+                      key={day}
+                      style={[
+                        s.dayRow,
+                        active && { borderColor: diffColor, backgroundColor: diffColor + '10' },
+                        locked && { opacity: 0.4 },
+                      ]}
+                      onPress={() => {
+                        if (locked) return;
+                        const next = active
+                          ? selected.filter(d => d !== day)
+                          : [...selected, day];
+                        setAnswers(a => ({ ...a, training_days: next as any }));
+                      }}
+                      activeOpacity={0.7}
+                      disabled={locked}
+                    >
+                      <Text style={[s.dayLabel, active && { color: diffColor, fontWeight: '700' }]}>{day}</Text>
+                      {active
+                        ? <Ionicons name="checkmark-circle" size={20} color={diffColor} />
+                        : <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                      }
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          );
+        })()}
 
         {/* Height picker — cm/ft toggle + value */}
         {current.type === 'height' && (
@@ -833,14 +912,20 @@ export default function Form() {
               <Text style={[s.backText, { color: diffColor }]}>{tr('form_back')}</Text>
             </TouchableOpacity>
           )}
-          {(current.type === 'slider' || current.type === 'height' || current.type === 'weight') && step < total - 1 && (
+          {(() => {
+            const daySelectReady = current.type === 'daySelect'
+              && ((answers.training_days as unknown as string[])?.length ?? 0) === ((answers.days_per_week as number) ?? 3);
+            const showNext = (current.type === 'slider' || current.type === 'height' || current.type === 'weight' || daySelectReady) && step < total - 1;
+            if (!showNext) return null;
+            return (
             <TouchableOpacity
               style={[s.cta, { backgroundColor: diffColor }]}
               onPress={() => setStep(st => st + 1)}
             >
               <Text style={s.ctaText}>{tr('form_next')}</Text>
             </TouchableOpacity>
-          )}
+            );
+          })()}
           {step === total - 1 && (
             <TouchableOpacity style={[s.cta, { backgroundColor: diffColor }, loading && s.disabled]} onPress={submit} disabled={loading}>
               <Text style={s.ctaText}>{loading ? tr('form_building') : tr('form_build')}</Text>
@@ -882,6 +967,12 @@ const s = StyleSheet.create({
   levelText:        { flex: 1 },
   levelLabel:       { fontSize: 16, color: colors.text, fontWeight: '700', marginBottom: 2 },
   levelSubtitle:    { fontSize: 12, color: colors.muted, lineHeight: 16 },
+
+  // Day select
+  dayCounter:       { fontSize: 13, fontWeight: '700', textAlign: 'center', marginTop: 16, marginBottom: 16 },
+  dayList:          { gap: 8 },
+  dayRow:           { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#0d0d0d', borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 16, paddingHorizontal: 16 },
+  dayLabel:         { fontSize: 16, color: colors.text, fontWeight: '500' },
 
   // Height/weight measure
   measureWrap:      { alignItems: 'center', marginTop: 24 },
