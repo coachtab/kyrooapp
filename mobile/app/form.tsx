@@ -616,7 +616,6 @@ export default function Form() {
         <View style={s.nav}>
           {step > 0 && (
             <TouchableOpacity style={s.back} onPress={() => setStep(s => s - 1)}>
-              <Ionicons name="chevron-back" size={18} color={colors.muted} />
               <Text style={s.backText}>{tr('form_back')}</Text>
             </TouchableOpacity>
           )}
@@ -676,10 +675,10 @@ const s = StyleSheet.create({
   sliderLabels:     { flexDirection: 'row', justifyContent: 'space-between' },
   sliderMin:        { fontSize: 12, color: colors.muted },
   sliderMax:        { fontSize: 12, color: colors.muted },
-  nav:              { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 32, gap: 12 },
-  back:             { flex: 1, paddingVertical: 16, borderWidth: 1, borderColor: colors.border, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  backText:         { fontSize: 16, color: colors.text, fontWeight: '600' },
-  cta:              { flex: 1, backgroundColor: colors.cta, borderRadius: 14, paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
-  ctaText:          { fontSize: 16, fontWeight: '700', color: colors.bg },
+  nav:              { flexDirection: 'row', alignItems: 'stretch', marginTop: 32, gap: 12 },
+  back:             { flex: 1, borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
+  backText:         { fontSize: 16, color: colors.text, fontWeight: '700' },
+  cta:              { flex: 1, borderRadius: 14, paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
+  ctaText:          { fontSize: 16, fontWeight: '700', color: '#fff' },
   disabled:         { opacity: 0.6 },
 });
