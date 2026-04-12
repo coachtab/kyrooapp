@@ -8,6 +8,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { api } from '@/api';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
+import { useAuth } from '@/context/AuthContext';
 
 // ── Level ring — partial circle indicator (25/50/75/100%) ─────────────────
 function LevelRing({ percent, color, size = 34 }: { percent: number; color: string; size?: number }) {
@@ -630,13 +631,28 @@ export default function Form() {
   const STEPS: Step[] = [...intro, ...withDaySelect];
 
   const dayLabels = lang === 'de' ? DAY_LABELS_DE : DAY_LABELS_EN;
+  const { user } = useAuth();
+
+  // Pre-fill from stored user profile when available
+  const storedHeight = user?.height_cm ?? null;
+  const storedWeight = user?.weight_kg ?? null;
 
   const [step,        setStep]        = useState(0);
-  const [answers,     setAnswers]     = useState<Record<string, string | number>>({ height_cm: 170, weight_kg: 70 });
+  const [answers,     setAnswers]     = useState<Record<string, string | number>>({
+    height_cm: storedHeight ?? 170,
+    weight_kg: storedWeight ?? 70,
+    ...(user?.gender ? { gender: user.gender } : {}),
+  });
   const [loading,     setLoading]     = useState(false);
   const [heightUnit,  setHeightUnit]  = useState<'cm' | 'ft'>('cm');
   const [weightUnit,  setWeightUnit]  = useState<'kg' | 'lbs'>('kg');
-  const [touchedKeys, setTouchedKeys] = useState<Set<string>>(new Set());
+  const [touchedKeys, setTouchedKeys] = useState<Set<string>>(() => {
+    const init = new Set<string>();
+    if (storedHeight != null) init.add('height_cm');
+    if (storedWeight != null) init.add('weight_kg');
+    if (user?.gender) init.add('gender');
+    return init;
+  });
   const touch = (key: string) => setTouchedKeys(s => (s.has(key) ? s : new Set(s).add(key)));
 
   const current    = STEPS[step];

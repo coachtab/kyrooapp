@@ -7,6 +7,9 @@ export interface User {
   email: string;
   name: string;
   is_premium: boolean;
+  height_cm?: number | null;
+  weight_kg?: number | null;
+  gender?: string | null;
   stats?: { total_workouts: number; streak: number; total_plans: number };
 }
 

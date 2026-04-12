@@ -329,7 +329,7 @@ app.post('/api/auth/login', async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      'SELECT id, email, name, password_hash, is_premium, email_verified FROM users WHERE email = $1',
+      'SELECT id, email, name, password_hash, is_premium, email_verified, height_cm, weight_kg, gender FROM users WHERE email = $1',
       [email.toLowerCase()]
     );
     const user = rows[0];
@@ -438,6 +438,19 @@ app.post('/api/questionnaire', auth, async (req, res) => {
         JSON.stringify(extraAnswers),
       ]
     );
+
+    // Persist body metrics on the user so future questionnaires pre-fill
+    if (gender || height_cm != null || weight_kg != null) {
+      await pool.query(
+        `UPDATE users SET
+           gender    = COALESCE($2, gender),
+           height_cm = COALESCE($3, height_cm),
+           weight_kg = COALESCE($4, weight_kg)
+         WHERE id = $1`,
+        [req.user.id, gender || null, height_cm || null, weight_kg || null]
+      );
+    }
+
     res.json({ id: rows[0].id });
   } catch (err) {
     console.error('[questionnaire]', err.message);
@@ -778,7 +791,7 @@ app.post('/api/tracking/mood', auth, async (req, res) => {
 app.get('/api/profile', auth, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id, email, name, is_premium, created_at FROM users WHERE id = $1',
+      'SELECT id, email, name, is_premium, height_cm, weight_kg, gender, created_at FROM users WHERE id = $1',
       [req.user.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'User not found' });
@@ -864,6 +877,10 @@ pool.connect()
     await pool.query(`ALTER TABLE questionnaires ADD COLUMN IF NOT EXISTS extra_answers JSONB`);
     await pool.query(`ALTER TABLE questionnaires ADD COLUMN IF NOT EXISTS training_days TEXT[]`);
     await pool.query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS ai_generated BOOLEAN NOT NULL DEFAULT false`);
+    // Persistent user body metrics
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS height_cm INT`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS weight_kg DECIMAL(5,1)`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT`);
     console.log('Database connected.');
   })
   .catch(err => console.error('Database connection failed:', err.message));
