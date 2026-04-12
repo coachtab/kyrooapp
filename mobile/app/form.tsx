@@ -839,7 +839,7 @@ export default function Form() {
               ))}
             </View>
             <View style={s.measureDisplay}>
-              <Text style={[s.measureVal, !touchedKeys.has('height_cm') && { color: colors.muted }]}>
+              <Text style={[s.measureVal, { color: touchedKeys.has('height_cm') ? diffColor : colors.muted }]}>
                 {heightUnit === 'cm'
                   ? Math.round(answers.height_cm as number)
                   : `${Math.floor((answers.height_cm as number) / 30.48)}'${Math.round(((answers.height_cm as number) / 2.54) % 12)}"`}
@@ -871,7 +871,7 @@ export default function Form() {
               ))}
             </View>
             <View style={s.measureDisplay}>
-              <Text style={[s.measureVal, !touchedKeys.has('weight_kg') && { color: colors.muted }]}>
+              <Text style={[s.measureVal, { color: touchedKeys.has('weight_kg') ? diffColor : colors.muted }]}>
                 {weightUnit === 'kg'
                   ? Math.round(answers.weight_kg as number)
                   : Math.round((answers.weight_kg as number) * 2.20462)}
@@ -914,7 +914,7 @@ export default function Form() {
         {current.type === 'slider' && (
           <View style={s.sliderWrap}>
             <View style={s.sliderDisplay}>
-              <Text style={[s.sliderVal, !touchedKeys.has(current.key) && { color: colors.muted }]}>
+              <Text style={[s.sliderVal, { color: touchedKeys.has(current.key) ? diffColor : colors.muted }]}>
                 {sliderVal}
               </Text>
               <Text style={s.sliderUnit}>{current.unit}</Text>
@@ -948,41 +948,44 @@ export default function Form() {
             </TouchableOpacity>
           )}
           {(() => {
-            const needsNextButton = current.type === 'slider' || current.type === 'height' || current.type === 'weight' || current.type === 'daySelect';
-            if (!needsNextButton) return null;
+            // Validate current step: must have a real answer
+            const isSlider = current.type === 'slider' || current.type === 'height' || current.type === 'weight';
+            const isDaySelect = current.type === 'daySelect';
+            const isChoice = current.type === 'iconSelect' || current.type === 'levelSelect' || current.type === 'select';
 
-            // Required validation: user must interact with this step before advancing
             const isAnswered =
-              current.type === 'daySelect'
+              isDaySelect
                 ? ((answers.training_days as unknown as string[])?.length ?? 0) === ((answers.days_per_week as number) ?? 3)
-                : touchedKeys.has(current.key);
+                : isSlider
+                  ? touchedKeys.has(current.key)
+                  : isChoice
+                    ? answers[current.key] != null
+                    : true;
 
-            if (step < total - 1) {
-              return (
-                <TouchableOpacity
-                  style={[s.cta, { backgroundColor: diffColor }, !isAnswered && s.disabled]}
-                  onPress={() => isAnswered && setStep(st => st + 1)}
-                  disabled={!isAnswered}
-                >
-                  <Text style={s.ctaText}>{tr('form_next')}</Text>
-                </TouchableOpacity>
-              );
-            }
+            const isLast = step === total - 1;
+
+            // For sliders, day select, and the FINAL step: render an explicit Next/Build button
+            // (choice steps on non-final rely on auto-advance, so no button is shown)
+            if (!isSlider && !isDaySelect && !isLast) return null;
+
             return (
               <TouchableOpacity
-                style={[s.cta, { backgroundColor: diffColor }, (loading || !isAnswered) && s.disabled]}
-                onPress={submit}
-                disabled={loading || !isAnswered}
+                style={[s.cta, { backgroundColor: diffColor }, (!isAnswered || loading) && s.disabled]}
+                onPress={() => {
+                  if (!isAnswered || loading) return;
+                  if (isLast) submit();
+                  else setStep(st => st + 1);
+                }}
+                disabled={!isAnswered || loading}
               >
-                <Text style={s.ctaText}>{loading ? tr('form_building') : tr('form_build')}</Text>
+                <Text style={s.ctaText}>
+                  {isLast
+                    ? (loading ? tr('form_building') : tr('form_build'))
+                    : tr('form_next')}
+                </Text>
               </TouchableOpacity>
             );
           })()}
-          {step === total - 1 && !(current.type === 'slider' || current.type === 'height' || current.type === 'weight' || current.type === 'daySelect') && (
-            <TouchableOpacity style={[s.cta, { backgroundColor: diffColor }, loading && s.disabled]} onPress={submit} disabled={loading}>
-              <Text style={s.ctaText}>{loading ? tr('form_building') : tr('form_build')}</Text>
-            </TouchableOpacity>
-          )}
         </View>
       </ScrollView>
     </SafeAreaView>

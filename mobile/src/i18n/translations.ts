@@ -144,7 +144,7 @@ const t = {
     form_of:          'of',
     form_back:        'Back',
     form_next:        'Next',
-    form_build:       'Build My Program 🚀',
+    form_build:       'Build My Plan',
     form_building:    'Building…',
 
     // ── Generating ────────────────────────────────────────────────────
@@ -404,7 +404,7 @@ const t = {
     form_of:          'von',
     form_back:        'Zurück',
     form_next:        'Weiter',
-    form_build:       'Mein Programm erstellen 🚀',
+    form_build:       'Meinen Plan erstellen',
     form_building:    'Wird erstellt…',
 
     // ── Generating ────────────────────────────────────────────────────
