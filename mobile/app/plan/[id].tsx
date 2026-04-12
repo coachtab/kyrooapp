@@ -151,7 +151,7 @@ const s = StyleSheet.create({
   statDivider: { width: 1, backgroundColor: colors.border },
 
   detailsCard: { backgroundColor: colors.card, borderRadius: 16, padding: 18, marginBottom: 12, borderWidth: 1.5 },
-  sectionLabel:{ fontSize: 11, fontWeight: '700', letterSpacing: 1.5, color: colors.muted, marginBottom: 10 },
+  sectionLabel:{ fontSize: 11, fontWeight: '700', letterSpacing: 1.5, color: colors.muted, marginBottom: 12 },
   detailsText: { fontSize: 14, color: colors.text, lineHeight: 22 },
 
   cta:         { borderRadius: 16, paddingVertical: 18, alignItems: 'center', marginTop: 8 },

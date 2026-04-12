@@ -254,16 +254,82 @@ const t = {
     plan_desc_HIGH_INTENSITY:'HIIT stands for High-Intensity Interval Training — short bursts of hard effort followed by rest. Burns lots of calories in less time. Every session uses a different fun format.',
 
     // ── Plan program overviews (keyed by category) ───────────────────────
-    plan_detail_FAT_LOSS:      '10 weeks of fat-burning workouts in three phases. Phase 1 (weeks 1–3): build the habit. Phase 2 (weeks 4–7): increase intensity with interval sessions. Phase 3 (weeks 8–10): maximum effort for visible results. Train 4 days per week with active rest on recovery days.',
-    plan_detail_HYPERTROPHY:   '16-week muscle-building program using progressive overload. Weeks 1–4: learn the fundamental lifts. Weeks 5–8: increase volume and intensity. Weeks 9–12: push past previous personal records. Weeks 13–16: peak strength and size. Train 5 days per week with a push / pull / legs split.',
-    plan_detail_TRANSFORMATION:'13 weeks of total-body transformation in three phases. Phase 1 (weeks 1–4): build your base — cardio and basic strength. Phase 2 (weeks 5–9): combine fat loss and muscle gain. Phase 3 (weeks 10–13): intense sessions for maximum definition. 4 training days per week.',
-    plan_detail_FIRST_STEPS:   '8 weeks designed for complete beginners. Weeks 1–2: learn proper form on 5 key exercises. Weeks 3–4: add reps and time. Weeks 5–6: introduce weights and resistance. Weeks 7–8: combine everything into a full routine. 3 sessions per week — short, achievable, and confidence-building.',
-    plan_detail_NO_GYM:        '6 weeks of bodyweight training with zero equipment. Weeks 1–2: master the basics — push-ups, squats, and planks. Weeks 3–4: add variations and increase reps. Weeks 5–6: advanced bodyweight circuits for maximum burn. 4 sessions per week, 15–45 minutes each.',
-    plan_detail_POOL:          '12 weeks of structured swim training for all abilities. Weeks 1–3: build base endurance and practice stroke technique. Weeks 4–7: introduce interval sets (swim fast, rest, repeat). Weeks 8–10: longer distances and mixed strokes. Weeks 11–12: peak fitness and personal-best attempts. 3 pool sessions per week.',
-    plan_detail_RACE_READY:    '12 weeks of race-specific Hyrox training. Weeks 1–3: aerobic base and learn all 8 stations. Weeks 4–7: combine running with station work, build race pace. Weeks 8–10: full race simulations at high intensity. Weeks 11–12: taper and race strategy. 5 sessions per week.',
-    plan_detail_HALF_OR_FULL:  '20 weeks of marathon training. Weeks 1–5: build weekly mileage gradually. Weeks 6–12: tempo runs and long-run progression. Weeks 13–17: peak mileage — your hardest training block. Weeks 18–19: taper — reduce volume, stay sharp. Week 20: race week. 4 runs per week including one long run.',
-    plan_detail_FUNCTIONAL:    '12 weeks of functional fitness. Weeks 1–3: fundamentals — Olympic lifts, gymnastics basics, and conditioning. Weeks 4–7: increase load and complexity. Weeks 8–10: benchmark WODs to measure progress. Weeks 11–12: peak performance. 5 sessions per week mixing strength, skill, and met-con (metabolic conditioning — fast cardio circuits).',
-    plan_detail_HIGH_INTENSITY:'6 weeks of HIIT that maximises calorie burn in minimum time. Weeks 1–2: longer rest (work 20 sec / rest 40 sec). Weeks 3–4: balanced intervals (work 30 sec / rest 30 sec). Weeks 5–6: Tabata (work 20 sec / rest 10 sec) and AMRAP circuits (as many reps as possible). 4 sessions per week, 15–45 minutes each.',
+    plan_detail_FAT_LOSS:
+      '10 weeks of fat-burning training, built in 3 progressive phases.\n\n' +
+      '• Weeks 1–3 — build the habit with steady cardio and basic strength\n' +
+      '• Weeks 4–7 — ramp up intensity with interval sessions\n' +
+      '• Weeks 8–10 — maximum effort for visible results\n\n' +
+      '4 days per week · active rest on off days',
+
+    plan_detail_HYPERTROPHY:
+      '16 weeks to build real muscle using progressive overload.\n\n' +
+      '• Weeks 1–4 — learn the fundamental lifts\n' +
+      '• Weeks 5–8 — add volume and intensity\n' +
+      '• Weeks 9–12 — push past your personal records\n' +
+      '• Weeks 13–16 — peak strength and size\n\n' +
+      '5 days per week · Push / Pull / Legs split',
+
+    plan_detail_TRANSFORMATION:
+      '13 weeks of total-body transformation in 3 phases.\n\n' +
+      '• Phase 1 (weeks 1–4) — build your base: cardio + strength\n' +
+      '• Phase 2 (weeks 5–9) — combine fat loss with muscle gain\n' +
+      '• Phase 3 (weeks 10–13) — intense sessions for maximum definition\n\n' +
+      '4 training days per week',
+
+    plan_detail_FIRST_STEPS:
+      '8 weeks designed for complete beginners — build lasting habits.\n\n' +
+      '• Weeks 1–2 — learn proper form on 5 key exercises\n' +
+      '• Weeks 3–4 — add reps and duration\n' +
+      '• Weeks 5–6 — introduce light weights and resistance\n' +
+      '• Weeks 7–8 — combine everything into a full routine\n\n' +
+      '3 short sessions per week · easy to start, hard to quit',
+
+    plan_detail_NO_GYM:
+      '6 weeks of bodyweight-only training — zero equipment needed.\n\n' +
+      '• Weeks 1–2 — master the basics (push-ups, squats, planks)\n' +
+      '• Weeks 3–4 — add variations and increase reps\n' +
+      '• Weeks 5–6 — advanced circuits for maximum burn\n\n' +
+      '4 sessions per week · 15–45 minutes each',
+
+    plan_detail_POOL:
+      '12 weeks of structured pool training for every ability.\n\n' +
+      '• Weeks 1–3 — build base endurance and refine your stroke\n' +
+      '• Weeks 4–7 — interval sets (swim fast → rest → repeat)\n' +
+      '• Weeks 8–10 — longer distances and mixed strokes\n' +
+      '• Weeks 11–12 — peak fitness, go for personal bests\n\n' +
+      '3 pool sessions per week',
+
+    plan_detail_RACE_READY:
+      '12 weeks of Hyrox race-specific preparation.\n\n' +
+      '• Weeks 1–3 — aerobic base and learn all 8 stations\n' +
+      '• Weeks 4–7 — running + stations combined, build race pace\n' +
+      '• Weeks 8–10 — full race simulations at high intensity\n' +
+      '• Weeks 11–12 — taper and race strategy\n\n' +
+      '5 sessions per week',
+
+    plan_detail_HALF_OR_FULL:
+      '20 weeks of progressive marathon training.\n\n' +
+      '• Weeks 1–5 — build weekly mileage gradually\n' +
+      '• Weeks 6–12 — tempo runs and long-run progression\n' +
+      '• Weeks 13–17 — peak mileage, your hardest block\n' +
+      '• Weeks 18–19 — taper: reduce volume, stay sharp\n' +
+      '• Week 20 — race week\n\n' +
+      '4 runs per week · one long run',
+
+    plan_detail_FUNCTIONAL:
+      '12 weeks of functional fitness in the CrossFit style.\n\n' +
+      '• Weeks 1–3 — fundamentals: Olympic lifts, gymnastics, cardio\n' +
+      '• Weeks 4–7 — increase load and complexity\n' +
+      '• Weeks 8–10 — benchmark WODs to measure progress\n' +
+      '• Weeks 11–12 — peak performance\n\n' +
+      '5 sessions per week · strength + skill + met-con',
+
+    plan_detail_HIGH_INTENSITY:
+      '6 weeks of HIIT — maximum burn in minimum time.\n\n' +
+      '• Weeks 1–2 — longer rest (20s work / 40s rest)\n' +
+      '• Weeks 3–4 — balanced intervals (30s / 30s)\n' +
+      '• Weeks 5–6 — Tabata (20s / 10s) and AMRAP circuits\n\n' +
+      '4 sessions per week · 15–45 minutes each',
   },
 
   de: {
@@ -514,16 +580,82 @@ const t = {
     plan_desc_HIGH_INTENSITY:'HIIT steht für High-Intensity Interval Training — kurze intensive Belastungsphasen gefolgt von Erholung. Verbrennt viele Kalorien in kurzer Zeit. Jede Einheit hat ein anderes Format.',
 
     // ── Programmübersichten (nach Kategorie) ─────────────────────────────
-    plan_detail_FAT_LOSS:      '10 Wochen Fettverbrennungs-Training in drei Phasen. Phase 1 (Wochen 1–3): Gewohnheit aufbauen. Phase 2 (Wochen 4–7): Intensität mit Intervall-Einheiten steigern. Phase 3 (Wochen 8–10): Maximaleinsatz für sichtbare Ergebnisse. 4 Trainingstage pro Woche, aktive Erholung an Ruhetagen.',
-    plan_detail_HYPERTROPHY:   '16-Wochen-Muskelaufbauprogramm mit progressivem Overload. Wochen 1–4: Grundübungen erlernen. Wochen 5–8: Volumen und Intensität steigern. Wochen 9–12: persönliche Bestleistungen übertreffen. Wochen 13–16: maximale Kraft- und Muskelphase. 5 Trainingstage pro Woche mit Push / Pull / Beine-Aufteilung.',
-    plan_detail_TRANSFORMATION:'13 Wochen Gesamttransformation in drei Phasen. Phase 1 (Wochen 1–4): Basis aufbauen — Cardio und Grundkraft. Phase 2 (Wochen 5–9): Fettabbau und Muskelaufbau kombinieren. Phase 3 (Wochen 10–13): intensive Einheiten für maximale Definition. 4 Trainingstage pro Woche.',
-    plan_detail_FIRST_STEPS:   '8 Wochen für komplette Anfänger. Wochen 1–2: korrekte Ausführung von 5 Grundübungen erlernen. Wochen 3–4: Wiederholungen und Zeit steigern. Wochen 5–6: Gewichte und Widerstand einführen. Wochen 7–8: alles zu einem vollständigen Trainingsplan zusammenführen. 3 Einheiten pro Woche — kurz, machbar und motivierend.',
-    plan_detail_NO_GYM:        '6 Wochen Körpergewichtstraining ohne jegliches Equipment. Wochen 1–2: Grundübungen meistern — Liegestütze (Push-ups), Kniebeugen (Squats) und Planks. Wochen 3–4: Variationen hinzufügen und Wiederholungen steigern. Wochen 5–6: fortgeschrittene Circuits für maximale Intensität. 4 Einheiten pro Woche, je 15–45 Minuten.',
-    plan_detail_POOL:          '12 Wochen strukturiertes Schwimmtraining für alle Leistungsniveaus. Wochen 1–3: Grundlagenausdauer aufbauen und Technik verbessern. Wochen 4–7: Intervallsätze einführen (schnell schwimmen, ausruhen, wiederholen). Wochen 8–10: längere Distanzen und gemischte Stile. Wochen 11–12: Spitzenform und Bestzeiten. 3 Pool-Einheiten pro Woche.',
-    plan_detail_RACE_READY:    '12 Wochen wettkampfspezifisches Hyrox-Training. Wochen 1–3: aerobe Basis aufbauen und alle 8 Stationen kennenlernen. Wochen 4–7: Laufen mit Stationsarbeit kombinieren, Renntempo aufbauen. Wochen 8–10: vollständige Rennsimulationen bei hoher Intensität. Wochen 11–12: Taper und Rennstrategie. 5 Einheiten pro Woche.',
-    plan_detail_HALF_OR_FULL:  '20 Wochen Marathon-Training. Wochen 1–5: Wochenkilometer schrittweise steigern. Wochen 6–12: Tempo-Runs und Progression der langen Läufe. Wochen 13–17: Höchstkilometer — die intensivste Trainingsphase. Wochen 18–19: Taper — Volumen reduzieren, scharf bleiben. Woche 20: Rennwoche. 4 Läufe pro Woche, darunter ein langer Lauf.',
-    plan_detail_FUNCTIONAL:    '12 Wochen funktionelles Fitnessprogramm. Wochen 1–3: Grundlagen erlernen — olympisches Gewichtheben, Turnen und Kondition. Wochen 4–7: Last und Komplexität steigern. Wochen 8–10: Benchmark-WODs zur Fortschrittsmessung. Wochen 11–12: Spitzenleistung testen. 5 Einheiten pro Woche mit Kraft, Technik und Met-Con (Metabolische Konditionierung — schnelle Cardio-Circuits).',
-    plan_detail_HIGH_INTENSITY:'6 Wochen HIIT für maximale Kalorienverbrennung in minimaler Zeit. Wochen 1–2: längere Pausen (20 Sek. Arbeit / 40 Sek. Pause). Wochen 3–4: ausgeglichene Intervalle (30 Sek. Arbeit / 30 Sek. Pause). Wochen 5–6: Tabata (20 Sek. Arbeit / 10 Sek. Pause) und AMRAP-Circuits (so viele Wiederholungen wie möglich). 4 Einheiten pro Woche, je 15–45 Minuten.',
+    plan_detail_FAT_LOSS:
+      '10 Wochen Fettverbrennung in 3 progressiven Phasen.\n\n' +
+      '• Wochen 1–3 — Gewohnheit aufbauen mit Cardio und Grundkraft\n' +
+      '• Wochen 4–7 — Intensität mit Intervallen steigern\n' +
+      '• Wochen 8–10 — volle Leistung für sichtbare Ergebnisse\n\n' +
+      '4 Tage pro Woche · aktive Erholung an Ruhetagen',
+
+    plan_detail_HYPERTROPHY:
+      '16 Wochen Muskelaufbau mit progressivem Overload.\n\n' +
+      '• Wochen 1–4 — Grundübungen erlernen\n' +
+      '• Wochen 5–8 — Volumen und Intensität steigern\n' +
+      '• Wochen 9–12 — persönliche Bestwerte übertreffen\n' +
+      '• Wochen 13–16 — maximale Kraft und Masse\n\n' +
+      '5 Tage pro Woche · Push / Pull / Beine',
+
+    plan_detail_TRANSFORMATION:
+      '13 Wochen Gesamtverwandlung in 3 Phasen.\n\n' +
+      '• Phase 1 (Wochen 1–4) — Basis aufbauen: Cardio + Kraft\n' +
+      '• Phase 2 (Wochen 5–9) — Fettabbau + Muskelaufbau kombinieren\n' +
+      '• Phase 3 (Wochen 10–13) — intensive Einheiten für Definition\n\n' +
+      '4 Trainingstage pro Woche',
+
+    plan_detail_FIRST_STEPS:
+      '8 Wochen für absolute Anfänger — baue nachhaltige Gewohnheiten auf.\n\n' +
+      '• Wochen 1–2 — 5 Grundübungen korrekt lernen\n' +
+      '• Wochen 3–4 — Wiederholungen und Dauer steigern\n' +
+      '• Wochen 5–6 — leichte Gewichte einführen\n' +
+      '• Wochen 7–8 — alles zu einer vollständigen Routine verbinden\n\n' +
+      '3 kurze Einheiten pro Woche · machbar und motivierend',
+
+    plan_detail_NO_GYM:
+      '6 Wochen Körpergewichtstraining — kein Equipment nötig.\n\n' +
+      '• Wochen 1–2 — Grundübungen meistern (Liegestütze, Squats, Planks)\n' +
+      '• Wochen 3–4 — Variationen und mehr Wiederholungen\n' +
+      '• Wochen 5–6 — fortgeschrittene Circuits für maximale Intensität\n\n' +
+      '4 Einheiten pro Woche · je 15–45 Minuten',
+
+    plan_detail_POOL:
+      '12 Wochen strukturiertes Schwimmtraining für alle Levels.\n\n' +
+      '• Wochen 1–3 — Grundausdauer aufbauen, Technik verbessern\n' +
+      '• Wochen 4–7 — Intervallsätze (schnell schwimmen → Pause → wiederholen)\n' +
+      '• Wochen 8–10 — längere Distanzen, gemischte Stile\n' +
+      '• Wochen 11–12 — Bestform, persönliche Bestzeiten\n\n' +
+      '3 Pool-Einheiten pro Woche',
+
+    plan_detail_RACE_READY:
+      '12 Wochen wettkampfspezifische Hyrox-Vorbereitung.\n\n' +
+      '• Wochen 1–3 — aerobe Basis und alle 8 Stationen kennenlernen\n' +
+      '• Wochen 4–7 — Laufen + Stationen kombinieren, Renntempo aufbauen\n' +
+      '• Wochen 8–10 — vollständige Rennsimulationen\n' +
+      '• Wochen 11–12 — Taper und Rennstrategie\n\n' +
+      '5 Einheiten pro Woche',
+
+    plan_detail_HALF_OR_FULL:
+      '20 Wochen progressives Marathon-Training.\n\n' +
+      '• Wochen 1–5 — Wochenkilometer schrittweise steigern\n' +
+      '• Wochen 6–12 — Tempo-Läufe und lange Läufe ausbauen\n' +
+      '• Wochen 13–17 — Höchstkilometer, deine härteste Phase\n' +
+      '• Wochen 18–19 — Taper: Volumen runter, Form halten\n' +
+      '• Woche 20 — Rennwoche\n\n' +
+      '4 Läufe pro Woche · ein langer Lauf',
+
+    plan_detail_FUNCTIONAL:
+      '12 Wochen funktionelles Training im CrossFit-Stil.\n\n' +
+      '• Wochen 1–3 — Grundlagen: Olympisches Heben, Turnen, Cardio\n' +
+      '• Wochen 4–7 — Last und Komplexität steigern\n' +
+      '• Wochen 8–10 — Benchmark-WODs zur Fortschrittsmessung\n' +
+      '• Wochen 11–12 — Spitzenleistung\n\n' +
+      '5 Einheiten pro Woche · Kraft + Technik + Met-Con',
+
+    plan_detail_HIGH_INTENSITY:
+      '6 Wochen HIIT — maximale Wirkung in minimaler Zeit.\n\n' +
+      '• Wochen 1–2 — längere Pausen (20 Sek. Arbeit / 40 Sek. Pause)\n' +
+      '• Wochen 3–4 — ausgeglichene Intervalle (30 / 30)\n' +
+      '• Wochen 5–6 — Tabata (20 / 10) und AMRAP-Circuits\n\n' +
+      '4 Einheiten pro Woche · je 15–45 Minuten',
   },
 } as const;
 
