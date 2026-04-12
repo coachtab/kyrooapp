@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/context/AuthContext';
 import { api } from '@/api';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
@@ -25,7 +24,14 @@ interface Plan {
   category: string;
   icon: string;
   color: string;
+  difficulty?: string;
 }
+
+const DIFFICULTY_COLOR: Record<string, string> = {
+  beginner:     '#4CAF50',  // green
+  intermediate: '#F59E0B',  // amber
+  advanced:     '#E94560',  // red
+};
 
 const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
   fire: 'flame-outline',
@@ -42,7 +48,6 @@ const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = 
 
 export default function HomeTab() {
   const router = useRouter();
-  const { user } = useAuth();
   const { tr } = useT();
   const [data,    setData]    = useState<TodayData | null>(null);
   const [plans,   setPlans]   = useState<Plan[]>([]);
@@ -112,14 +117,15 @@ export default function HomeTab() {
             </Text>
             <Text style={s.sub}>{tr('home_choose_plan')}</Text>
 
-            {/* Plan rows — clean, minimal, Ochy-style */}
+            {/* Plan rows — left border colored by difficulty */}
             <View style={s.planList}>
               {plans.map(plan => {
                 const iconName = ICON_MAP[plan.icon] || 'barbell-outline';
+                const diffColor = DIFFICULTY_COLOR[(plan.difficulty || '').toLowerCase()] || colors.muted;
                 return (
                   <TouchableOpacity
                     key={plan.id}
-                    style={s.planRow}
+                    style={[s.planRow, { borderLeftColor: diffColor }]}
                     activeOpacity={0.7}
                     onPress={() => router.push(`/plan/${plan.id}` as any)}
                   >
@@ -148,9 +154,18 @@ const s = StyleSheet.create({
   headlineAccent: { color: colors.accent },
   sub:            { fontSize: 15, color: colors.muted, marginBottom: 32 },
 
-  // Plan rows — Ochy clean list
-  planList:    { gap: 0 },
-  planRow:     { flexDirection: 'row', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#1a1a1a' },
+  // Plan rows — Ochy clean list with difficulty-colored left border
+  planList:    { gap: 10 },
+  planRow:     {
+    flexDirection:   'row',
+    alignItems:      'center',
+    paddingVertical: 16,
+    paddingLeft:     14,
+    paddingRight:    12,
+    borderLeftWidth: 3,
+    borderRadius:    8,
+    backgroundColor: '#0d0d0d',
+  },
   planRowIcon: { width: 28, marginRight: 14 },
   planRowName: { flex: 1, fontSize: 16, color: colors.text, fontWeight: '500' },
 
