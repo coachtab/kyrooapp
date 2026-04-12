@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Slider from '@react-native-community/slider';
@@ -468,17 +468,36 @@ export default function Form() {
     }
   };
 
+  const cancel = () => {
+    const msg = lang === 'de'
+      ? 'Fortschritt verwerfen und zurück zur Startseite?'
+      : 'Discard progress and go back home?';
+    const leave = () => router.replace('/(tabs)');
+    const hasAnswers = Object.keys(answers).length > 2; // height+weight defaults don't count
+    if (!hasAnswers) return leave();
+    if (Platform.OS === 'web') {
+      if (window.confirm(msg)) leave();
+    } else {
+      Alert.alert('', msg, [
+        { text: lang === 'de' ? 'Abbrechen' : 'Cancel', style: 'cancel' },
+        { text: lang === 'de' ? 'Verlassen' : 'Leave', style: 'destructive', onPress: leave },
+      ]);
+    }
+  };
+
   return (
     <SafeAreaView style={s.safe}>
-      {/* Progress bar */}
-      <View style={s.progressBar}>
-        <View style={[s.progressFill, { width: `${((step + 1) / total) * 100}%` as any, backgroundColor: diffColor }]} />
+      {/* Top bar — X close button, always visible, can't miss */}
+      <View style={s.topBar}>
+        <View style={{ flex: 1 }}>
+          <View style={s.progressBar}>
+            <View style={[s.progressFill, { width: `${((step + 1) / total) * 100}%` as any, backgroundColor: diffColor }]} />
+          </View>
+        </View>
+        <TouchableOpacity style={s.close} onPress={cancel} hitSlop={16} activeOpacity={0.7}>
+          <Ionicons name="close" size={22} color={colors.text} />
+        </TouchableOpacity>
       </View>
-
-      {/* Close button — cancel plan creation */}
-      <TouchableOpacity style={s.close} onPress={() => router.back()} hitSlop={12}>
-        <Ionicons name="close" size={26} color={colors.muted} />
-      </TouchableOpacity>
 
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {/* Question — Ochy style with accent word */}
@@ -645,10 +664,20 @@ export default function Form() {
 
 const s = StyleSheet.create({
   safe:             { flex: 1, backgroundColor: colors.bg },
-  progressBar:      { height: 3, backgroundColor: colors.border },
-  progressFill:     { height: 3, backgroundColor: colors.accent },
-  close:            { position: 'absolute', top: 14, right: 20, zIndex: 10, padding: 6 },
-  scroll:           { padding: 24, paddingTop: 48, paddingBottom: 48 },
+  topBar:           { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8, gap: 14 },
+  progressBar:      { height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
+  progressFill:     { height: 4, backgroundColor: colors.accent, borderRadius: 2 },
+  close:            {
+    width:           36,
+    height:          36,
+    borderRadius:    18,
+    backgroundColor: colors.card,
+    borderWidth:     1,
+    borderColor:     colors.border,
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+  scroll:           { padding: 24, paddingTop: 24, paddingBottom: 48 },
   question:         { fontSize: 24, fontWeight: '800', color: colors.text, lineHeight: 32, marginBottom: 6, textAlign: 'center' },
   questionAccent:   {},
   hint:             { fontSize: 13, color: colors.muted, lineHeight: 18, marginBottom: 24, textAlign: 'center' },
