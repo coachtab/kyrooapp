@@ -609,6 +609,15 @@ function parseExercise(str) {
 
 app.get('/api/programs', auth, async (req, res) => {
   try {
+    // Self-heal: delete any programs for this user that have no schedule days
+    // (orphaned / empty programs from a failed build)
+    await pool.query(
+      `DELETE FROM programs p
+       WHERE p.user_id = $1
+         AND NOT EXISTS (SELECT 1 FROM program_days d WHERE d.program_id = p.id)`,
+      [req.user.id]
+    );
+
     const { rows } = await pool.query(
       `SELECT p.id, COALESCE(p.name, pl.name) AS name, pl.category, pl.icon, pl.difficulty,
               p.total_weeks, p.current_week, p.status, p.ai_generated, p.created_at
