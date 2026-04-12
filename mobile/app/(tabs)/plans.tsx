@@ -85,8 +85,33 @@ export default function PlansTab() {
         </Text>
       </View>
 
+      {programs.length === 0 ? (
+        <View style={s.emptyWrap}>
+          {/* Circular visual — Ochy IMG_7782 style */}
+          <View style={s.emptyCircle}>
+            <Ionicons name="barbell" size={72} color={colors.accent} />
+          </View>
+
+          {/* Text */}
+          <Text style={s.emptyIntro}>
+            {lang === 'de'
+              ? 'Du hast noch keinen Trainingsplan. Kyroo baut dir mit KI einen persönlichen Plan — basierend auf deinem Level, deiner Zeit und deinen Zielen.'
+              : "You don't have a training plan yet. Kyroo uses AI to build one tailored to your level, your time, and your goals."}
+          </Text>
+          <Text style={s.emptyHeadline}>
+            {lang === 'de'
+              ? 'Bereit, deinen ersten Plan zu erstellen?'
+              : 'Ready to build your first plan?'}
+          </Text>
+
+          {/* Start button */}
+          <TouchableOpacity style={s.startBtn} onPress={() => router.push('/(tabs)')} activeOpacity={0.85}>
+            <Text style={s.startBtnText}>{lang === 'de' ? 'Starten!' : 'Start!'}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-        {programs.length === 0 ? null : (
+        {(
           programs.map(prog => {
             const iconName = ICON_MAP[prog.icon || ''] || 'barbell-outline';
             const diffColor = DIFFICULTY_COLOR[(prog.difficulty || '').toLowerCase()] || colors.accent;
@@ -126,6 +151,7 @@ export default function PlansTab() {
           })
         )}
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -140,6 +166,24 @@ const s = StyleSheet.create({
   sub:    { fontSize: 14, color: colors.muted, marginTop: 6 },
 
   scroll: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
+
+  // Empty state — Ochy IMG_7782 style
+  emptyWrap:      { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, paddingBottom: 40 },
+  emptyCircle:    {
+    width:           140,
+    height:          140,
+    borderRadius:    70,
+    backgroundColor: colors.accent + '18',
+    borderWidth:     2,
+    borderColor:     colors.accent + '50',
+    alignItems:      'center',
+    justifyContent:  'center',
+    marginBottom:    32,
+  },
+  emptyIntro:     { fontSize: 14, color: colors.muted, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  emptyHeadline:  { fontSize: 18, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 32, lineHeight: 26 },
+  startBtn:       { backgroundColor: colors.cta, borderRadius: 14, paddingVertical: 17, paddingHorizontal: 64, alignItems: 'center' },
+  startBtnText:   { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
 
   // Program card
   programCard:    { backgroundColor: '#0d0d0d', borderRadius: 14, borderWidth: 1.5, padding: 16, gap: 10 },
