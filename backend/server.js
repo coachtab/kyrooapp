@@ -502,8 +502,34 @@ Output MUST be valid JSON matching this exact schema:
         { "name": "Exercise name", "sets": 4, "reps": "8-10" }
       ]
     }
-  ]
+  ],
+  "nutrition": {
+    "calories_per_day": 2400,
+    "protein_g": 180,
+    "carbs_g": 260,
+    "fat_g": 75,
+    "meal_frequency": "3 meals + 1 snack",
+    "sample_meals": [
+      { "when": "Breakfast", "name": "Greek yogurt with berries and granola", "kcal": 450 },
+      { "when": "Lunch",     "name": "Grilled chicken, quinoa, roasted veg",   "kcal": 650 },
+      { "when": "Snack",     "name": "Apple with almond butter",               "kcal": 250 },
+      { "when": "Dinner",    "name": "Salmon, sweet potato, broccoli",         "kcal": 700 },
+      { "when": "Optional",  "name": "Protein shake post-workout",             "kcal": 200 }
+    ],
+    "notes": "One short sentence of guidance."
+  }
 }
+
+INCLUDE THE "nutrition" FIELD ONLY when PLAN TYPE is one of:
+FAT LOSS, HYPERTROPHY, TRANSFORMATION, FIRST STEPS
+For all other plan types (swim, marathon, Hyrox, mobility, etc.), OMIT the nutrition field entirely — do NOT include it in the JSON at all.
+
+NUTRITION GUIDANCE when included:
+- Base calories_per_day on: height, weight, gender, fitness level, goal (deficit for FAT LOSS, surplus for HYPERTROPHY, maintenance for most others)
+- Protein target: 1.6–2.2 g per kg bodyweight for building/preserving muscle
+- Split remaining calories into carbs and fat based on goal
+- Sample meals should be simple, realistic, and culturally neutral
+- notes: one practical reminder tailored to the plan (e.g. "Eat protein at every meal" or "Pre-workout carbs matter")
 
 RULES:
 - Generate exactly 7 entries in "days" — one for each day of the week, in order Mon-Sun
@@ -581,7 +607,7 @@ app.post('/api/programs/generate', auth, async (req, res) => {
     const totalWeeks = q.total_weeks || 12;
 
     // Try Claude first, fall back to template if it fails
-    let programName, days, aiGenerated = false;
+    let programName, days, aiGenerated = false, nutrition = null;
     try {
       const aiPlan = await generateProgramWithClaude(q);
       programName = aiPlan.name || q.plan_name || `${category} Program`;
@@ -594,6 +620,10 @@ app.post('/api/programs/generate', auth, async (req, res) => {
           reps: typeof e.reps === 'string' ? e.reps : String(e.reps || '-'),
         })) : [],
       }));
+      // Capture nutrition block if present (only expected for body-comp plans)
+      if (aiPlan.nutrition && typeof aiPlan.nutrition === 'object') {
+        nutrition = aiPlan.nutrition;
+      }
       aiGenerated = true;
     } catch (aiErr) {
       console.error('[generate] Claude failed, falling back to template:', aiErr.message);
@@ -605,9 +635,9 @@ app.post('/api/programs/generate', auth, async (req, res) => {
 
     // New programs are always queued — the user must explicitly start them
     const progRes = await pool.query(
-      `INSERT INTO programs (user_id, plan_id, questionnaire_id, total_weeks, name, status, ai_generated)
-       VALUES ($1,$2,$3,$4,$5,'queued',$6) RETURNING id`,
-      [req.user.id, q.plan_id, questionnaireId, totalWeeks, programName, aiGenerated]
+      `INSERT INTO programs (user_id, plan_id, questionnaire_id, total_weeks, name, status, ai_generated, nutrition)
+       VALUES ($1,$2,$3,$4,$5,'queued',$6,$7) RETURNING id`,
+      [req.user.id, q.plan_id, questionnaireId, totalWeeks, programName, aiGenerated, nutrition ? JSON.stringify(nutrition) : null]
     );
     const programId = progRes.rows[0].id;
 
@@ -955,6 +985,7 @@ pool.connect()
     await pool.query(`ALTER TABLE questionnaires ADD COLUMN IF NOT EXISTS extra_answers JSONB`);
     await pool.query(`ALTER TABLE questionnaires ADD COLUMN IF NOT EXISTS training_days TEXT[]`);
     await pool.query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS ai_generated BOOLEAN NOT NULL DEFAULT false`);
+    await pool.query(`ALTER TABLE programs ADD COLUMN IF NOT EXISTS nutrition JSONB`);
     // Persistent user body metrics
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS height_cm INT`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS weight_kg DECIMAL(5,1)`);

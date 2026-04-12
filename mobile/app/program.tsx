@@ -10,6 +10,16 @@ import { translateFocus, translateDayName, translateExercise, translateRest } fr
 
 interface Exercise { name: string; sets: number; reps: string; rest?: string; notes?: string }
 interface Day      { day_number: number; name: string; focus: string; exercises: Exercise[] }
+interface SampleMeal { when?: string; name?: string; kcal?: number }
+interface Nutrition {
+  calories_per_day?: number;
+  protein_g?: number;
+  carbs_g?: number;
+  fat_g?: number;
+  meal_frequency?: string;
+  sample_meals?: SampleMeal[];
+  notes?: string;
+}
 interface Program  {
   id: number;
   name: string;
@@ -21,6 +31,7 @@ interface Program  {
   days_per_week: number;
   status: ProgramStatus;
   ai_generated?: boolean;
+  nutrition?: Nutrition | null;
   days: Day[];
 }
 
@@ -316,6 +327,72 @@ export default function ProgramScreen() {
           )}
         </View>
 
+        {/* Nutrition — only shown when Claude returned a nutrition block (body-comp plans) */}
+        {program.nutrition && (
+          <View style={s.nutritionSection}>
+            <Text style={s.sectionLabel}>
+              {lang === 'de' ? 'ERNÄHRUNG' : 'NUTRITION'}
+            </Text>
+
+            {/* Macro grid */}
+            <View style={[s.macroCard, { borderColor: diffColor + '40' }]}>
+              <View style={s.macroRow}>
+                <View style={s.macroItem}>
+                  <Text style={[s.macroNum, { color: diffColor }]}>{program.nutrition.calories_per_day ?? '—'}</Text>
+                  <Text style={s.macroLabel}>{lang === 'de' ? 'kcal / Tag' : 'kcal / day'}</Text>
+                </View>
+                <View style={s.macroDivider} />
+                <View style={s.macroItem}>
+                  <Text style={[s.macroNum, { color: diffColor }]}>{program.nutrition.protein_g ?? '—'}g</Text>
+                  <Text style={s.macroLabel}>{lang === 'de' ? 'Protein' : 'Protein'}</Text>
+                </View>
+                <View style={s.macroDivider} />
+                <View style={s.macroItem}>
+                  <Text style={[s.macroNum, { color: diffColor }]}>{program.nutrition.carbs_g ?? '—'}g</Text>
+                  <Text style={s.macroLabel}>{lang === 'de' ? 'Kohlenhydrate' : 'Carbs'}</Text>
+                </View>
+                <View style={s.macroDivider} />
+                <View style={s.macroItem}>
+                  <Text style={[s.macroNum, { color: diffColor }]}>{program.nutrition.fat_g ?? '—'}g</Text>
+                  <Text style={s.macroLabel}>{lang === 'de' ? 'Fett' : 'Fat'}</Text>
+                </View>
+              </View>
+
+              {program.nutrition.meal_frequency && (
+                <Text style={s.mealFrequency}>{program.nutrition.meal_frequency}</Text>
+              )}
+            </View>
+
+            {/* Sample meals */}
+            {Array.isArray(program.nutrition.sample_meals) && program.nutrition.sample_meals.length > 0 && (
+              <>
+                <Text style={s.sampleMealsLabel}>
+                  {lang === 'de' ? 'BEISPIEL-MAHLZEITEN' : 'SAMPLE MEALS'}
+                </Text>
+                <View style={s.mealList}>
+                  {program.nutrition.sample_meals.map((m, i) => (
+                    <View key={i} style={s.mealRow}>
+                      <View style={[s.mealDot, { backgroundColor: diffColor }]} />
+                      <View style={{ flex: 1 }}>
+                        {m.when && <Text style={[s.mealWhen, { color: diffColor }]}>{m.when.toUpperCase()}</Text>}
+                        <Text style={s.mealName} numberOfLines={2}>{m.name}</Text>
+                      </View>
+                      {m.kcal != null && <Text style={s.mealKcal}>{m.kcal} kcal</Text>}
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {program.nutrition.notes && (
+              <View style={[s.notesBox, { borderColor: diffColor + '40', backgroundColor: diffColor + '10' }]}>
+                <Ionicons name="bulb-outline" size={16} color={diffColor} />
+                <Text style={[s.notesText, { color: colors.text }]}>{program.nutrition.notes}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Days */}
         <Text style={s.sectionLabel}>{tr('program_schedule')}</Text>
         {program.days?.map((day, i) => (
@@ -448,6 +525,27 @@ const s = StyleSheet.create({
 
   // Schedule
   sectionLabel:  { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, color: colors.muted, marginBottom: 12 },
+
+  // Nutrition
+  nutritionSection:{ marginBottom: 20 },
+  macroCard:       { backgroundColor: '#0d0d0d', borderRadius: 16, borderWidth: 1.5, padding: 16, marginBottom: 14 },
+  macroRow:        { flexDirection: 'row', alignItems: 'center' },
+  macroItem:       { flex: 1, alignItems: 'center' },
+  macroNum:        { fontSize: 18, fontWeight: '800' },
+  macroLabel:      { fontSize: 10, color: colors.muted, marginTop: 3, fontWeight: '600' },
+  macroDivider:    { width: 1, height: 26, backgroundColor: colors.border },
+  mealFrequency:   { fontSize: 12, color: colors.muted, textAlign: 'center', marginTop: 12, fontStyle: 'italic' },
+
+  sampleMealsLabel:{ fontSize: 11, fontWeight: '700', letterSpacing: 1.5, color: colors.muted, marginBottom: 10, marginTop: 4 },
+  mealList:        { gap: 8, marginBottom: 12 },
+  mealRow:         { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#0d0d0d', borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 12 },
+  mealDot:         { width: 8, height: 8, borderRadius: 4 },
+  mealWhen:        { fontSize: 10, fontWeight: '800', letterSpacing: 1, marginBottom: 2 },
+  mealName:        { fontSize: 14, color: colors.text, fontWeight: '500', lineHeight: 18 },
+  mealKcal:        { fontSize: 12, color: colors.muted, fontWeight: '600' },
+
+  notesBox:        { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 6 },
+  notesText:       { flex: 1, fontSize: 13, lineHeight: 19 },
   dayCard:       { backgroundColor: '#0d0d0d', borderRadius: 14, marginBottom: 10, borderWidth: 1 },
   dayHeader:     { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
   dayNum:        { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
