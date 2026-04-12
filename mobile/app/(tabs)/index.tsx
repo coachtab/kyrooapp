@@ -155,7 +155,7 @@ const s = StyleSheet.create({
   scroll: { paddingHorizontal: 28, paddingTop: 48, paddingBottom: 40 },
 
   // Headline — Ochy bold italic style
-  headline:       { fontSize: 26, fontWeight: '800', color: colors.text, lineHeight: 34, marginBottom: 10, fontStyle: 'italic' },
+  headline:       { fontSize: 26, fontWeight: '800', color: colors.text, lineHeight: 34, marginBottom: 10 },
   headlineAccent: { color: colors.accent },
   sub:            { fontSize: 15, color: colors.muted, marginBottom: 32 },
 
