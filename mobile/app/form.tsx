@@ -352,6 +352,33 @@ const EN: Record<string, Step[]> = {
     { key: 'equipment',     question: 'What do you', questionAccent: 'have?', type: 'iconSelect', iconOptions: EQUIPMENT_EN },
     { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
   ],
+
+  'MOBILITY': [
+    { key: 'mobility_goal', question: 'Why do you want', questionAccent: 'more mobility?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Undo desk posture',     icon: 'laptop-outline'    },
+        { label: 'Recover from training', icon: 'refresh-outline'   },
+        { label: 'Unlock tight muscles',  icon: 'body-outline'      },
+        { label: 'Stay flexible as I age',icon: 'heart-outline'     },
+      ]},
+    { key: 'tight_area', question: 'Your most', questionAccent: 'problematic area?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Lower back',          icon: 'body-outline'     },
+        { label: 'Hips & glutes',       icon: 'walk-outline'     },
+        { label: 'Shoulders & neck',    icon: 'hand-left-outline'},
+        { label: 'Hamstrings',          icon: 'fitness-outline'  },
+        { label: 'Whole body tight',    icon: 'shuffle-outline'  },
+      ]},
+    { key: 'using_with', question: 'How will you', questionAccent: 'use this?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Standalone program',   icon: 'leaf-outline'    },
+        { label: 'With strength training', icon: 'barbell-outline'},
+        { label: 'With running/cardio',  icon: 'walk-outline'    },
+        { label: 'Coming back from injury', icon: 'medkit-outline'},
+      ]},
+    { key: 'days_per_week', question: 'How many days per week', questionAccent: 'can you stretch?', hint: 'Daily works great — even 10 minutes helps', type: 'slider', min: 3, max: 7, unit: ' days' },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
+  ],
 };
 
 const EN_DEFAULT: Step[] = [
@@ -587,6 +614,33 @@ const DE: Record<string, Step[]> = {
       ]},
     { key: 'days_per_week', question: 'Wie viele HIIT-Einheiten', questionAccent: 'pro Woche?', hint: '3–4 Tage sind genug', type: 'slider', min: 2, max: 5, unit: ' Tage' },
     { key: 'equipment',     question: 'Was hast', questionAccent: 'du?', type: 'iconSelect', iconOptions: EQUIPMENT_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+  ],
+
+  'MOBILITY': [
+    { key: 'mobility_goal', question: 'Warum möchtest du', questionAccent: 'mehr Beweglichkeit?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Schreibtischhaltung lösen', icon: 'laptop-outline'  },
+        { label: 'Nach dem Training regenerieren', icon: 'refresh-outline' },
+        { label: 'Verspannungen lösen',       icon: 'body-outline'    },
+        { label: 'Im Alter beweglich bleiben',icon: 'heart-outline'   },
+      ]},
+    { key: 'tight_area', question: 'Deine größte', questionAccent: 'Problemzone?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Unterer Rücken',  icon: 'body-outline'     },
+        { label: 'Hüfte & Gesäß',   icon: 'walk-outline'     },
+        { label: 'Schulter & Nacken', icon: 'hand-left-outline'},
+        { label: 'Beinrückseite',   icon: 'fitness-outline'  },
+        { label: 'Alles verspannt', icon: 'shuffle-outline'  },
+      ]},
+    { key: 'using_with', question: 'Wie wirst du es', questionAccent: 'nutzen?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Als eigenständiges Programm', icon: 'leaf-outline'    },
+        { label: 'Mit Krafttraining',           icon: 'barbell-outline' },
+        { label: 'Mit Laufen/Cardio',           icon: 'walk-outline'    },
+        { label: 'Reha nach Verletzung',        icon: 'medkit-outline'  },
+      ]},
+    { key: 'days_per_week', question: 'Wie viele Tage pro Woche', questionAccent: 'kannst du dehnen?', hint: 'Täglich ist super — schon 10 Minuten helfen', type: 'slider', min: 3, max: 7, unit: ' Tage' },
     { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
   ],
 };

@@ -240,6 +240,7 @@ const t = {
     plan_name_HALF_OR_FULL:  'Run a Marathon',
     plan_name_FUNCTIONAL:    'CrossFit-Style Training',
     plan_name_HIGH_INTENSITY:'HIIT Cardio Blast',
+    plan_name_MOBILITY:      'Mobility & Recovery',
 
     // ── Plan descriptions (keyed by category) ────────────────────────────
     plan_desc_FAT_LOSS:      'Lose body fat by moving more and eating smarter. A mix of cardio (heart-pumping exercise) and strength (lifting) sessions done at your own pace.',
@@ -252,6 +253,7 @@ const t = {
     plan_desc_HALF_OR_FULL:  'Train for a half marathon (21 km / 13 miles) or full marathon (42 km / 26 miles). Includes long runs, tempo runs (comfortably hard pace), and a taper (easy week before race day).',
     plan_desc_FUNCTIONAL:    'CrossFit (CF) mixes weightlifting, gymnastics, and fast cardio workouts called WODs (Workout of the Day). Every session is different and includes both easy (scaled) and hard (Rx) options.',
     plan_desc_HIGH_INTENSITY:'HIIT stands for High-Intensity Interval Training — short bursts of hard effort followed by rest. Burns lots of calories in less time. Every session uses a different fun format.',
+    plan_desc_MOBILITY:      'Daily stretching, yoga-style flows, and recovery routines. Perfect as a standalone program or alongside any other plan. Undoes desk posture, unlocks tight hips, and keeps you moving well as you age.',
 
     // ── Plan program overviews (keyed by category) ───────────────────────
     plan_detail_FAT_LOSS:
@@ -330,6 +332,14 @@ const t = {
       '• Weeks 3–4 — balanced intervals (30s / 30s)\n' +
       '• Weeks 5–6 — Tabata (20s / 10s) and AMRAP circuits\n\n' +
       '4 sessions per week · 15–45 minutes each',
+
+    plan_detail_MOBILITY:
+      '8 weeks of stretching, yoga flows, and recovery.\n\n' +
+      '• Weeks 1–2 — full-body mobility baseline and breathing\n' +
+      '• Weeks 3–4 — target tight spots (hips, T-spine, shoulders)\n' +
+      '• Weeks 5–6 — yoga flows and deep stretches\n' +
+      '• Weeks 7–8 — active recovery, foam rolling, long holds\n\n' +
+      '5 sessions per week · 15–25 minutes daily',
   },
 
   de: {
@@ -566,6 +576,7 @@ const t = {
     plan_name_HALF_OR_FULL:  'Marathon laufen',
     plan_name_FUNCTIONAL:    'CrossFit-Style Training',
     plan_name_HIGH_INTENSITY:'HIIT Cardio Blast',
+    plan_name_MOBILITY:      'Beweglichkeit & Regeneration',
 
     // ── Planbeschreibungen (nach Kategorie) ──────────────────────────────
     plan_desc_FAT_LOSS:      'Körperfett abbauen durch mehr Bewegung und cleveres Essen. Eine Mischung aus Cardio- (Herztraining) und Krafteinheiten (Gewichtheben) — in deinem eigenen Tempo.',
@@ -578,6 +589,7 @@ const t = {
     plan_desc_HALF_OR_FULL:  'Training für einen Halbmarathon (21 km) oder Marathon (42 km). Mit langen Läufen, Tempo-Runs (angenehm hartes Tempo) und einem Taper (leichte Woche vor dem Renntag).',
     plan_desc_FUNCTIONAL:    'CrossFit (CF) kombiniert Gewichtheben, Turnen und schnelle Cardio-Einheiten — sogenannte WODs (Workout of the Day). Jede Einheit ist anders und bietet eine leichtere (Scaled) sowie eine volle (Rx) Option.',
     plan_desc_HIGH_INTENSITY:'HIIT steht für High-Intensity Interval Training — kurze intensive Belastungsphasen gefolgt von Erholung. Verbrennt viele Kalorien in kurzer Zeit. Jede Einheit hat ein anderes Format.',
+    plan_desc_MOBILITY:      'Tägliches Stretching, Yoga-Flows und Regenerationsroutinen. Perfekt als eigenständiges Programm oder als Ergänzung zu anderen Plänen. Löst Verspannungen vom Schreibtisch, öffnet enge Hüften und hält dich ein Leben lang beweglich.',
 
     // ── Programmübersichten (nach Kategorie) ─────────────────────────────
     plan_detail_FAT_LOSS:
@@ -656,6 +668,14 @@ const t = {
       '• Wochen 3–4 — ausgeglichene Intervalle (30 / 30)\n' +
       '• Wochen 5–6 — Tabata (20 / 10) und AMRAP-Circuits\n\n' +
       '4 Einheiten pro Woche · je 15–45 Minuten',
+
+    plan_detail_MOBILITY:
+      '8 Wochen Stretching, Yoga-Flows und Regeneration.\n\n' +
+      '• Wochen 1–2 — Ganzkörper-Beweglichkeit und Atmung\n' +
+      '• Wochen 3–4 — gezielte Problemzonen (Hüfte, Brustwirbel, Schultern)\n' +
+      '• Wochen 5–6 — Yoga-Flows und tiefe Dehnungen\n' +
+      '• Wochen 7–8 — aktive Erholung, Faszienrolle, lange Haltedauern\n\n' +
+      '5 Einheiten pro Woche · täglich 15–25 Minuten',
   },
 } as const;
 

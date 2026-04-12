@@ -27,6 +27,7 @@ const plans = [
   { name: 'Run a Marathon',         description: 'Train for a half marathon (21km / 13 miles) or full marathon (42km / 26 miles). Includes long runs, tempo runs (comfortably hard pace), and a taper (easy week before race day).',                     tag: 'YOUR PACE', category: 'HALF OR FULL',   icon: 'run',  color: '#2196F3', sort_order: 8 },
   { name: 'CrossFit-Style Training', description: 'CrossFit (CF) mixes weightlifting, gymnastics, and fast cardio workouts called WODs (Workout of the Day). Every session is different and includes both easy (scaled) and hard (Rx — full difficulty) options.', tag: 'YOUR PACE', category: 'FUNCTIONAL', icon: 'lift', color: '#FF9800', sort_order: 9 },
   { name: 'HIIT Cardio Blast',      description: 'HIIT stands for High-Intensity Interval Training — short bursts of hard effort followed by rest. Burns lots of calories in less time. Every session uses a different fun format.',                      tag: 'YOUR PACE', category: 'HIGH INTENSITY',  icon: 'zap',  color: '#F44336', sort_order: 10 },
+  { name: 'Mobility & Recovery',    description: 'Daily stretching, yoga-style flows, and recovery routines. Perfect as a standalone program or alongside any other plan. Undoes desk posture and keeps you moving well.',                                 tag: 'DAILY',     category: 'MOBILITY',        icon: 'flower', color: '#34D399', sort_order: 11 },
 ];
 
 const habits = [

@@ -35,6 +35,7 @@ const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = 
   run:  'walk-outline',
   lift: 'fitness-outline',
   zap:  'flash-outline',
+  flower: 'flower-outline',
 };
 
 const DIFFICULTY_COLOR: Record<string, string> = {
