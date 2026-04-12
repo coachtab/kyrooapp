@@ -64,7 +64,8 @@ export default function HomeTab() {
       api.plans.list().catch(() => []),
     ]).then(([t, p]) => {
       setData(t as TodayData);
-      setPlans(p as Plan[]);
+      const sorted = (p as Plan[]).slice().sort((a, b) => a.name.localeCompare(b.name));
+      setPlans(sorted);
     }).finally(() => setLoading(false));
   }, []);
 
