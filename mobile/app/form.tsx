@@ -4,9 +4,34 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle } from 'react-native-svg';
 import { api } from '@/api';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
+
+// ── Level ring — partial circle indicator (25/50/75/100%) ─────────────────
+function LevelRing({ percent, color, size = 34 }: { percent: number; color: string; size?: number }) {
+  const strokeWidth = 3;
+  const r = (size - strokeWidth) / 2;
+  const c = 2 * Math.PI * r;
+  const dash = (percent / 100) * c;
+  return (
+    <Svg width={size} height={size}>
+      <Circle cx={size / 2} cy={size / 2} r={r} stroke="#2a2a2a" strokeWidth={strokeWidth} fill="none" />
+      <Circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        stroke={color}
+        strokeWidth={strokeWidth}
+        fill="none"
+        strokeDasharray={`${dash} ${c}`}
+        strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+    </Svg>
+  );
+}
 
 // ── Intro steps: gender + height + weight (Ochy-style) ──────────────────────
 const INTRO_EN: Step[] = [
@@ -24,6 +49,18 @@ const INTRO_EN: Step[] = [
   },
   { key: 'height_cm', question: 'What is your', questionAccent: 'height?', type: 'height' },
   { key: 'weight_kg', question: 'What is your', questionAccent: 'weight?', type: 'weight' },
+  {
+    key: 'fitness_level',
+    question: 'How would you rate your',
+    questionAccent: 'fitness level?',
+    type: 'levelSelect',
+    iconOptions: [
+      { label: 'Beginner',     subtitle: "You've just started exercising",       ringPercent: 25  },
+      { label: 'Intermediate', subtitle: 'You train regularly — 1 to 3 years',   ringPercent: 50  },
+      { label: 'Advanced',     subtitle: 'You train seriously — 3+ years',       ringPercent: 75  },
+      { label: 'Elite',        subtitle: 'Competitive or professional athlete',  ringPercent: 100 },
+    ],
+  },
 ];
 
 const INTRO_DE: Step[] = [
@@ -41,15 +78,32 @@ const INTRO_DE: Step[] = [
   },
   { key: 'height_cm', question: 'Wie',    questionAccent: 'groß bist du?', type: 'height' },
   { key: 'weight_kg', question: 'Wie',    questionAccent: 'viel wiegst du?', type: 'weight' },
+  {
+    key: 'fitness_level',
+    question: 'Wie würdest du dein',
+    questionAccent: 'Fitnesslevel bewerten?',
+    type: 'levelSelect',
+    iconOptions: [
+      { label: 'Anfänger',      subtitle: 'Du hast gerade erst angefangen',           ringPercent: 25  },
+      { label: 'Fortgeschritten', subtitle: 'Du trainierst regelmäßig — 1 bis 3 Jahre', ringPercent: 50  },
+      { label: 'Profi',         subtitle: 'Du trainierst ernsthaft — 3+ Jahre',       ringPercent: 75  },
+      { label: 'Elite',         subtitle: 'Wettkampfsport oder Profi',                ringPercent: 100 },
+    ],
+  },
 ];
 
-interface StepOption { label: string; icon?: React.ComponentProps<typeof Ionicons>['name'] }
+interface StepOption {
+  label: string;
+  subtitle?: string;
+  icon?: React.ComponentProps<typeof Ionicons>['name'];
+  ringPercent?: number;
+}
 interface Step {
   key:      string;
   question: string;
   questionAccent?: string;
   hint?:    string;
-  type:     'select' | 'slider' | 'iconSelect' | 'height' | 'weight';
+  type:     'select' | 'slider' | 'iconSelect' | 'levelSelect' | 'height' | 'weight';
   options?: string[];
   iconOptions?: StepOption[];
   min?:     number;
@@ -529,6 +583,30 @@ export default function Form() {
           </View>
         )}
 
+        {/* Level select — fitness level with ring indicator */}
+        {current.type === 'levelSelect' && (
+          <View style={s.iconOptions}>
+            {current.iconOptions!.map(opt => {
+              const active = answers[current.key] === opt.label;
+              return (
+                <TouchableOpacity
+                  key={opt.label}
+                  style={[s.levelOption, active && { borderColor: diffColor, backgroundColor: diffColor + '10' }]}
+                  onPress={() => answer(opt.label)}
+                  activeOpacity={0.75}
+                >
+                  <LevelRing percent={opt.ringPercent ?? 25} color={diffColor} />
+                  <View style={s.levelText}>
+                    <Text style={[s.levelLabel, active && { color: diffColor }]}>{opt.label}</Text>
+                    <Text style={s.levelSubtitle}>{opt.subtitle}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={active ? diffColor : colors.muted} />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
         {/* Height picker — cm/ft toggle + value */}
         {current.type === 'height' && (
           <View style={s.measureWrap}>
@@ -686,6 +764,12 @@ const s = StyleSheet.create({
   iconOptions:      { gap: 10, marginTop: 32 },
   iconOption:       { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0d0d0d', borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 16, paddingHorizontal: 16, gap: 14 },
   iconOptionText:   { flex: 1, fontSize: 16, color: colors.text, fontWeight: '500' },
+
+  // Level select (fitness level with ring)
+  levelOption:      { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0d0d0d', borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 14, gap: 14 },
+  levelText:        { flex: 1 },
+  levelLabel:       { fontSize: 16, color: colors.text, fontWeight: '700', marginBottom: 2 },
+  levelSubtitle:    { fontSize: 12, color: colors.muted, lineHeight: 16 },
 
   // Height/weight measure
   measureWrap:      { alignItems: 'center', marginTop: 24 },
