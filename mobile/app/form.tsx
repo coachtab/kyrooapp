@@ -3,16 +3,55 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Slider from '@react-native-community/slider';
+import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/api';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
 
+// ── Intro steps: gender + height + weight (Ochy-style) ──────────────────────
+const INTRO_EN: Step[] = [
+  {
+    key: 'gender',
+    question: 'How would you',
+    questionAccent: 'identify yourself?',
+    type: 'iconSelect',
+    iconOptions: [
+      { label: 'Man',              icon: 'male-outline'        },
+      { label: 'Woman',            icon: 'female-outline'      },
+      { label: 'Non-binary',       icon: 'male-female-outline' },
+      { label: 'Prefer not to say' },
+    ],
+  },
+  { key: 'height_cm', question: 'What is your', questionAccent: 'height?', type: 'height' },
+  { key: 'weight_kg', question: 'What is your', questionAccent: 'weight?', type: 'weight' },
+];
+
+const INTRO_DE: Step[] = [
+  {
+    key: 'gender',
+    question: 'Wie würdest du dich',
+    questionAccent: 'identifizieren?',
+    type: 'iconSelect',
+    iconOptions: [
+      { label: 'Mann',                       icon: 'male-outline'        },
+      { label: 'Frau',                       icon: 'female-outline'      },
+      { label: 'Non-binary',                 icon: 'male-female-outline' },
+      { label: 'Möchte ich nicht angeben'  },
+    ],
+  },
+  { key: 'height_cm', question: 'Wie',    questionAccent: 'groß bist du?', type: 'height' },
+  { key: 'weight_kg', question: 'Wie',    questionAccent: 'viel wiegst du?', type: 'weight' },
+];
+
+interface StepOption { label: string; icon?: React.ComponentProps<typeof Ionicons>['name'] }
 interface Step {
   key:      string;
   question: string;
+  questionAccent?: string;
   hint?:    string;
-  type:     'select' | 'slider';
+  type:     'select' | 'slider' | 'iconSelect' | 'height' | 'weight';
   options?: string[];
+  iconOptions?: StepOption[];
   min?:     number;
   max?:     number;
   unit?:    string;
@@ -398,11 +437,15 @@ export default function Form() {
 
   const byCategory = lang === 'de' ? DE : EN;
   const defaultSteps = lang === 'de' ? DE_DEFAULT : EN_DEFAULT;
-  const STEPS: Step[] = (category ? byCategory[category] : undefined) ?? defaultSteps;
+  const categorySteps: Step[] = (category ? byCategory[category] : undefined) ?? defaultSteps;
+  const intro = lang === 'de' ? INTRO_DE : INTRO_EN;
+  const STEPS: Step[] = [...intro, ...categorySteps];
 
-  const [step,    setStep]    = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string | number>>({});
-  const [loading, setLoading] = useState(false);
+  const [step,        setStep]        = useState(0);
+  const [answers,     setAnswers]     = useState<Record<string, string | number>>({ height_cm: 170, weight_kg: 70 });
+  const [loading,     setLoading]     = useState(false);
+  const [heightUnit,  setHeightUnit]  = useState<'cm' | 'ft'>('cm');
+  const [weightUnit,  setWeightUnit]  = useState<'kg' | 'lbs'>('kg');
 
   const current    = STEPS[step];
   const total      = STEPS.length;
@@ -433,22 +476,114 @@ export default function Form() {
       </View>
 
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Text style={s.stepNum}>{tr('form_question')} {step + 1} {tr('form_of')} {total}</Text>
-        <Text style={s.question}>{current.question}</Text>
+        {/* Question — Ochy style with accent word */}
+        <Text style={s.question}>
+          {current.question}
+          {current.questionAccent && <> <Text style={[s.questionAccent, { color: diffColor }]}>{current.questionAccent}</Text></>}
+        </Text>
         {current.hint && <Text style={s.hint}>{current.hint}</Text>}
+
+        {/* Icon select — gender screen */}
+        {current.type === 'iconSelect' && (
+          <View style={s.iconOptions}>
+            {current.iconOptions!.map(opt => {
+              const active = answers[current.key] === opt.label;
+              return (
+                <TouchableOpacity
+                  key={opt.label}
+                  style={[s.iconOption, active && { borderColor: diffColor, backgroundColor: diffColor + '10' }]}
+                  onPress={() => answer(opt.label)}
+                  activeOpacity={0.75}
+                >
+                  {opt.icon && <Ionicons name={opt.icon} size={22} color={active ? diffColor : colors.text} style={{ width: 26 }} />}
+                  {!opt.icon && <View style={{ width: 26 }} />}
+                  <Text style={[s.iconOptionText, active && { color: diffColor, fontWeight: '700' }]}>{opt.label}</Text>
+                  <Ionicons name="chevron-forward" size={18} color={active ? diffColor : colors.muted} />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Height picker — cm/ft toggle + value */}
+        {current.type === 'height' && (
+          <View style={s.measureWrap}>
+            <View style={s.unitToggle}>
+              {(['cm', 'ft'] as const).map(u => (
+                <TouchableOpacity key={u} style={[s.unitBtn, heightUnit === u && { backgroundColor: colors.card2, borderColor: diffColor }]} onPress={() => setHeightUnit(u)}>
+                  <Text style={[s.unitText, heightUnit === u && { color: diffColor, fontWeight: '700' }]}>{u}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={s.measureDisplay}>
+              <Text style={s.measureVal}>
+                {heightUnit === 'cm'
+                  ? Math.round(answers.height_cm as number)
+                  : `${Math.floor((answers.height_cm as number) / 30.48)}'${Math.round(((answers.height_cm as number) / 2.54) % 12)}"`}
+              </Text>
+              <Text style={s.measureUnit}>{heightUnit}</Text>
+            </View>
+            <Slider
+              style={s.measureSlider}
+              minimumValue={140}
+              maximumValue={210}
+              step={1}
+              value={answers.height_cm as number}
+              minimumTrackTintColor={diffColor}
+              maximumTrackTintColor={colors.border}
+              thumbTintColor={diffColor}
+              onValueChange={val => setAnswers(a => ({ ...a, height_cm: val }))}
+            />
+          </View>
+        )}
+
+        {/* Weight picker — kg/lbs toggle + value */}
+        {current.type === 'weight' && (
+          <View style={s.measureWrap}>
+            <View style={s.unitToggle}>
+              {(['kg', 'lbs'] as const).map(u => (
+                <TouchableOpacity key={u} style={[s.unitBtn, weightUnit === u && { backgroundColor: colors.card2, borderColor: diffColor }]} onPress={() => setWeightUnit(u)}>
+                  <Text style={[s.unitText, weightUnit === u && { color: diffColor, fontWeight: '700' }]}>{u}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={s.measureDisplay}>
+              <Text style={s.measureVal}>
+                {weightUnit === 'kg'
+                  ? Math.round(answers.weight_kg as number)
+                  : Math.round((answers.weight_kg as number) * 2.20462)}
+              </Text>
+              <Text style={s.measureUnit}>{weightUnit}</Text>
+            </View>
+            <Slider
+              style={s.measureSlider}
+              minimumValue={40}
+              maximumValue={150}
+              step={1}
+              value={answers.weight_kg as number}
+              minimumTrackTintColor={diffColor}
+              maximumTrackTintColor={colors.border}
+              thumbTintColor={diffColor}
+              onValueChange={val => setAnswers(a => ({ ...a, weight_kg: val }))}
+            />
+          </View>
+        )}
 
         {/* Select options */}
         {current.type === 'select' && (
           <View style={s.options}>
-            {current.options!.map(opt => (
-              <TouchableOpacity
-                key={opt}
-                style={[s.option, answers[current.key] === opt && s.optionActive]}
-                onPress={() => answer(opt)}
-              >
-                <Text style={[s.optionText, answers[current.key] === opt && s.optionTextActive]}>{opt}</Text>
-              </TouchableOpacity>
-            ))}
+            {current.options!.map(opt => {
+              const active = answers[current.key] === opt;
+              return (
+                <TouchableOpacity
+                  key={opt}
+                  style={[s.option, active && { borderColor: diffColor, backgroundColor: diffColor + '15' }]}
+                  onPress={() => answer(opt)}
+                >
+                  <Text style={[s.optionText, active && { color: diffColor, fontWeight: '700' }]}>{opt}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
 
@@ -465,9 +600,9 @@ export default function Form() {
               maximumValue={current.max}
               step={1}
               value={sliderVal}
-              minimumTrackTintColor={colors.accent}
+              minimumTrackTintColor={diffColor}
               maximumTrackTintColor={colors.border}
-              thumbTintColor={colors.accent}
+              thumbTintColor={diffColor}
               onValueChange={val => setAnswers(a => ({ ...a, [current.key]: val }))}
             />
             <View style={s.sliderLabels}>
@@ -481,16 +616,20 @@ export default function Form() {
         <View style={s.nav}>
           {step > 0 && (
             <TouchableOpacity style={s.back} onPress={() => setStep(s => s - 1)}>
+              <Ionicons name="chevron-back" size={18} color={colors.muted} />
               <Text style={s.backText}>{tr('form_back')}</Text>
             </TouchableOpacity>
           )}
-          {current.type === 'slider' && step < total - 1 && (
-            <TouchableOpacity style={s.cta} onPress={() => answer(sliderVal)}>
+          {(current.type === 'slider' || current.type === 'height' || current.type === 'weight') && step < total - 1 && (
+            <TouchableOpacity
+              style={[s.cta, { backgroundColor: diffColor }]}
+              onPress={() => setStep(st => st + 1)}
+            >
               <Text style={s.ctaText}>{tr('form_next')}</Text>
             </TouchableOpacity>
           )}
           {step === total - 1 && (
-            <TouchableOpacity style={[s.cta, loading && s.disabled]} onPress={submit} disabled={loading}>
+            <TouchableOpacity style={[s.cta, { backgroundColor: diffColor }, loading && s.disabled]} onPress={submit} disabled={loading}>
               <Text style={s.ctaText}>{loading ? tr('form_building') : tr('form_build')}</Text>
             </TouchableOpacity>
           )}
@@ -504,10 +643,26 @@ const s = StyleSheet.create({
   safe:             { flex: 1, backgroundColor: colors.bg },
   progressBar:      { height: 3, backgroundColor: colors.border },
   progressFill:     { height: 3, backgroundColor: colors.accent },
-  scroll:           { padding: 24, paddingTop: 28, paddingBottom: 48 },
-  stepNum:          { fontSize: 12, color: colors.muted, fontWeight: '600', letterSpacing: 1, marginBottom: 10 },
-  question:         { fontSize: 22, fontWeight: '800', color: colors.text, lineHeight: 30, marginBottom: 6 },
-  hint:             { fontSize: 13, color: colors.muted, lineHeight: 18, marginBottom: 24 },
+  scroll:           { padding: 24, paddingTop: 20, paddingBottom: 48 },
+  question:         { fontSize: 24, fontWeight: '800', color: colors.text, lineHeight: 32, marginBottom: 6, textAlign: 'center' },
+  questionAccent:   {},
+  hint:             { fontSize: 13, color: colors.muted, lineHeight: 18, marginBottom: 24, textAlign: 'center' },
+
+  // Icon select (gender)
+  iconOptions:      { gap: 10, marginTop: 32 },
+  iconOption:       { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0d0d0d', borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 16, paddingHorizontal: 16, gap: 14 },
+  iconOptionText:   { flex: 1, fontSize: 16, color: colors.text, fontWeight: '500' },
+
+  // Height/weight measure
+  measureWrap:      { alignItems: 'center', marginTop: 24 },
+  unitToggle:       { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 10, padding: 4, marginBottom: 40, gap: 4 },
+  unitBtn:          { paddingHorizontal: 24, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: 'transparent' },
+  unitText:         { fontSize: 13, fontWeight: '600', color: colors.muted },
+  measureDisplay:   { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 24 },
+  measureVal:       { fontSize: 56, fontWeight: '800', color: colors.text },
+  measureUnit:      { fontSize: 18, color: colors.muted, fontWeight: '500' },
+  measureSlider:    { width: '100%' as any, height: 40 },
+
   options:          { gap: 10, marginTop: 16 },
   option:           { backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: 16, padding: 16 },
   optionActive:     { borderColor: colors.accent, backgroundColor: colors.accent + '15' },
