@@ -84,21 +84,36 @@ export default function PlanDetail() {
         <Text style={s.title}>{trPlan(plan.category, 'name', plan.name)}</Text>
         <Text style={s.desc}>{trPlan(plan.category, 'desc', plan.description)}</Text>
 
-        {/* Stats — border colored by difficulty */}
-        <View style={[s.statsRow, { borderColor: diffColor }]}>
-          <View style={s.stat}>
-            <Text style={[s.statNum, { color: diffColor }]}>{plan.duration_weeks}</Text>
-            <Text style={s.statLabel}>{tr('plans_weeks')}</Text>
+        {/* Commitment stats — 3 icon cards */}
+        <Text style={s.commitmentLabel}>
+          {tr('plans_weeks') === 'weeks' ? 'YOUR COMMITMENT' : 'DEIN EINSATZ'}
+        </Text>
+        <View style={s.statsGrid}>
+          {/* Duration */}
+          <View style={[s.statCard, { borderColor: diffColor + '40' }]}>
+            <View style={[s.statIconCircle, { backgroundColor: diffColor + '20', borderColor: diffColor }]}>
+              <Ionicons name="calendar-outline" size={18} color={diffColor} />
+            </View>
+            <Text style={[s.statBigNum, { color: diffColor }]}>{plan.duration_weeks}</Text>
+            <Text style={s.statCardLabel}>{tr('plans_weeks')}</Text>
           </View>
-          <View style={s.statDivider} />
-          <View style={s.stat}>
-            <Text style={[s.statNum, { color: diffColor }]}>{plan.frequency_per_week}</Text>
-            <Text style={s.statLabel}>{tr('program_per_week')}</Text>
+
+          {/* Frequency */}
+          <View style={[s.statCard, { borderColor: diffColor + '40' }]}>
+            <View style={[s.statIconCircle, { backgroundColor: diffColor + '20', borderColor: diffColor }]}>
+              <Ionicons name="repeat-outline" size={18} color={diffColor} />
+            </View>
+            <Text style={[s.statBigNum, { color: diffColor }]}>{plan.frequency_per_week}×</Text>
+            <Text style={s.statCardLabel}>{tr('program_per_week')}</Text>
           </View>
-          <View style={s.statDivider} />
-          <View style={s.stat}>
-            <Text style={[s.statNum, { color: diffColor }]}>{plan.duration_weeks * plan.frequency_per_week}</Text>
-            <Text style={s.statLabel}>{tr('program_sessions')}</Text>
+
+          {/* Total sessions */}
+          <View style={[s.statCard, { borderColor: diffColor + '40' }]}>
+            <View style={[s.statIconCircle, { backgroundColor: diffColor + '20', borderColor: diffColor }]}>
+              <Ionicons name="flag-outline" size={18} color={diffColor} />
+            </View>
+            <Text style={[s.statBigNum, { color: diffColor }]}>{plan.duration_weeks * plan.frequency_per_week}</Text>
+            <Text style={s.statCardLabel}>{tr('program_sessions')}</Text>
           </View>
         </View>
 
@@ -144,11 +159,29 @@ const s = StyleSheet.create({
   title:       { fontSize: 28, fontWeight: '800', color: colors.text, marginBottom: 10 },
   desc:        { fontSize: 15, color: colors.muted, lineHeight: 23, marginBottom: 24 },
 
-  statsRow:    { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 18, padding: 20, marginBottom: 16, borderWidth: 1.5 },
-  stat:        { flex: 1, alignItems: 'center' },
-  statNum:     { fontSize: 26, fontWeight: '800' },
-  statLabel:   { fontSize: 11, color: colors.muted, marginTop: 4 },
-  statDivider: { width: 1, backgroundColor: colors.border },
+  commitmentLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 2, color: colors.muted, marginBottom: 10 },
+  statsGrid:   { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  statCard:    {
+    flex:             1,
+    backgroundColor:  '#0d0d0d',
+    borderRadius:     16,
+    borderWidth:      1.5,
+    paddingVertical:  16,
+    paddingHorizontal: 10,
+    alignItems:       'center',
+    gap:              6,
+  },
+  statIconCircle: {
+    width:          36,
+    height:         36,
+    borderRadius:   18,
+    borderWidth:    1.5,
+    alignItems:     'center',
+    justifyContent: 'center',
+    marginBottom:   4,
+  },
+  statBigNum:  { fontSize: 26, fontWeight: '800', lineHeight: 30 },
+  statCardLabel: { fontSize: 10, fontWeight: '700', color: colors.muted, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' },
 
   detailsCard: { backgroundColor: colors.card, borderRadius: 16, padding: 18, marginBottom: 12, borderWidth: 1.5 },
   sectionLabel:{ fontSize: 11, fontWeight: '700', letterSpacing: 1.5, color: colors.muted, marginBottom: 12 },
