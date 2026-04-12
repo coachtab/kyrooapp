@@ -4,10 +4,31 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path, Line } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '@/api';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
+
+// White glove pointing hand — classic cartoon style
+function GloveHand({ size = 42 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 100 100">
+      {/* Cuff */}
+      <Path d="M28 78 L28 92 L72 92 L72 78 Z" fill="#FFFFFF" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
+      {/* Palm */}
+      <Path d="M26 52 Q26 80 50 80 Q74 80 74 52 L74 40 Q74 32 66 32 Q58 32 58 40 L58 30 Q58 20 50 20 Q42 20 42 30 L42 38 Q42 30 34 30 Q26 30 26 40 Z"
+        fill="#FFFFFF" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
+      {/* Extended index finger */}
+      <Path d="M42 38 L42 10 Q42 4 50 4 Q58 4 58 10 L58 36"
+        fill="#FFFFFF" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
+      {/* Glove lines (stitching on back of hand) */}
+      <Line x1="36" y1="60" x2="42" y2="70" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+      <Line x1="48" y1="58" x2="52" y2="72" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+      <Line x1="62" y1="60" x2="58" y2="72" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+    </Svg>
+  );
+}
 
 interface Program {
   id: number;
@@ -171,11 +192,11 @@ function SwipeableProgramCard({
             cs.demoHand,
             {
               opacity: demoOpacity,
-              transform: [{ translateX: demoX }],
+              transform: [{ translateX: demoX }, { rotate: canPause ? '90deg' : '-90deg' }],
             },
           ]}
         >
-          <Text style={cs.demoHandText}>👆</Text>
+          <GloveHand size={46} />
         </Animated.View>
       )}
     </View>
@@ -199,8 +220,7 @@ const cs = StyleSheet.create({
   track:      { height: 4, backgroundColor: '#1a1a1a', borderRadius: 2, overflow: 'hidden' },
   fill:       { height: 4, borderRadius: 2 },
 
-  demoHand:   { position: 'absolute', top: '50%', left: '50%', marginLeft: -20, marginTop: -20 },
-  demoHandText: { fontSize: 40 },
+  demoHand:   { position: 'absolute', top: '50%', left: '50%', marginLeft: -23, marginTop: -23 },
 });
 
 export default function PlansTab() {
