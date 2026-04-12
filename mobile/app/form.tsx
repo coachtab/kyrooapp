@@ -494,8 +494,8 @@ export default function Form() {
             <View style={[s.progressFill, { width: `${((step + 1) / total) * 100}%` as any, backgroundColor: diffColor }]} />
           </View>
         </View>
-        <TouchableOpacity style={s.close} onPress={cancel} hitSlop={16} activeOpacity={0.7}>
-          <Ionicons name="close" size={22} color={colors.text} />
+        <TouchableOpacity style={[s.close, { borderColor: diffColor, backgroundColor: diffColor + '15' }]} onPress={cancel} hitSlop={16} activeOpacity={0.7}>
+          <Ionicons name="close" size={22} color={diffColor} />
         </TouchableOpacity>
       </View>
 
