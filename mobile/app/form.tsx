@@ -830,68 +830,74 @@ export default function Form() {
         })()}
 
         {/* Height picker — cm/ft toggle + value */}
-        {current.type === 'height' && (
-          <View style={s.measureWrap}>
-            <View style={s.unitToggle}>
-              {(['cm', 'ft'] as const).map(u => (
-                <TouchableOpacity key={u} style={[s.unitBtn, heightUnit === u && { backgroundColor: colors.card2, borderColor: diffColor }]} onPress={() => setHeightUnit(u)}>
-                  <Text style={[s.unitText, heightUnit === u && { color: diffColor, fontWeight: '700' }]}>{u}</Text>
-                </TouchableOpacity>
-              ))}
+        {current.type === 'height' && (() => {
+          const h = Number(answers.height_cm) || 140;
+          return (
+            <View style={s.measureWrap}>
+              <View style={s.unitToggle}>
+                {(['cm', 'ft'] as const).map(u => (
+                  <TouchableOpacity key={u} style={[s.unitBtn, heightUnit === u && { backgroundColor: colors.card2, borderColor: diffColor }]} onPress={() => setHeightUnit(u)}>
+                    <Text style={[s.unitText, heightUnit === u && { color: diffColor, fontWeight: '700' }]}>{u}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={s.measureDisplay}>
+                <Text style={[s.measureVal, { color: diffColor }]}>
+                  {heightUnit === 'cm'
+                    ? Math.round(h)
+                    : `${Math.floor(h / 30.48)}'${Math.round((h / 2.54) % 12)}"`}
+                </Text>
+                <Text style={s.measureUnit}>{heightUnit}</Text>
+              </View>
+              <Slider
+                style={s.measureSlider}
+                minimumValue={140}
+                maximumValue={210}
+                step={1}
+                value={h}
+                minimumTrackTintColor={diffColor}
+                maximumTrackTintColor={colors.border}
+                thumbTintColor={diffColor}
+                onValueChange={val => { touch('height_cm'); setAnswers(a => ({ ...a, height_cm: val })); }}
+              />
             </View>
-            <View style={s.measureDisplay}>
-              <Text style={[s.measureVal, { color: touchedKeys.has('height_cm') ? diffColor : colors.muted }]}>
-                {heightUnit === 'cm'
-                  ? Math.round(answers.height_cm as number)
-                  : `${Math.floor((answers.height_cm as number) / 30.48)}'${Math.round(((answers.height_cm as number) / 2.54) % 12)}"`}
-              </Text>
-              <Text style={s.measureUnit}>{heightUnit}</Text>
-            </View>
-            <Slider
-              style={s.measureSlider}
-              minimumValue={140}
-              maximumValue={210}
-              step={1}
-              value={answers.height_cm as number}
-              minimumTrackTintColor={diffColor}
-              maximumTrackTintColor={colors.border}
-              thumbTintColor={diffColor}
-              onValueChange={val => { touch('height_cm'); setAnswers(a => ({ ...a, height_cm: val })); }}
-            />
-          </View>
-        )}
+          );
+        })()}
 
         {/* Weight picker — kg/lbs toggle + value */}
-        {current.type === 'weight' && (
-          <View style={s.measureWrap}>
-            <View style={s.unitToggle}>
-              {(['kg', 'lbs'] as const).map(u => (
-                <TouchableOpacity key={u} style={[s.unitBtn, weightUnit === u && { backgroundColor: colors.card2, borderColor: diffColor }]} onPress={() => setWeightUnit(u)}>
-                  <Text style={[s.unitText, weightUnit === u && { color: diffColor, fontWeight: '700' }]}>{u}</Text>
-                </TouchableOpacity>
-              ))}
+        {current.type === 'weight' && (() => {
+          const w = Number(answers.weight_kg) || 40;
+          return (
+            <View style={s.measureWrap}>
+              <View style={s.unitToggle}>
+                {(['kg', 'lbs'] as const).map(u => (
+                  <TouchableOpacity key={u} style={[s.unitBtn, weightUnit === u && { backgroundColor: colors.card2, borderColor: diffColor }]} onPress={() => setWeightUnit(u)}>
+                    <Text style={[s.unitText, weightUnit === u && { color: diffColor, fontWeight: '700' }]}>{u}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={s.measureDisplay}>
+                <Text style={[s.measureVal, { color: diffColor }]}>
+                  {weightUnit === 'kg'
+                    ? Math.round(w)
+                    : Math.round(w * 2.20462)}
+                </Text>
+                <Text style={s.measureUnit}>{weightUnit}</Text>
+              </View>
+              <Slider
+                style={s.measureSlider}
+                minimumValue={40}
+                maximumValue={150}
+                step={1}
+                value={w}
+                minimumTrackTintColor={diffColor}
+                maximumTrackTintColor={colors.border}
+                thumbTintColor={diffColor}
+                onValueChange={val => { touch('weight_kg'); setAnswers(a => ({ ...a, weight_kg: val })); }}
+              />
             </View>
-            <View style={s.measureDisplay}>
-              <Text style={[s.measureVal, { color: touchedKeys.has('weight_kg') ? diffColor : colors.muted }]}>
-                {weightUnit === 'kg'
-                  ? Math.round(answers.weight_kg as number)
-                  : Math.round((answers.weight_kg as number) * 2.20462)}
-              </Text>
-              <Text style={s.measureUnit}>{weightUnit}</Text>
-            </View>
-            <Slider
-              style={s.measureSlider}
-              minimumValue={40}
-              maximumValue={150}
-              step={1}
-              value={answers.weight_kg as number}
-              minimumTrackTintColor={diffColor}
-              maximumTrackTintColor={colors.border}
-              thumbTintColor={diffColor}
-              onValueChange={val => { touch('weight_kg'); setAnswers(a => ({ ...a, weight_kg: val })); }}
-            />
-          </View>
-        )}
+          );
+        })()}
 
         {/* Select options */}
         {current.type === 'select' && (
