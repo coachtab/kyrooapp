@@ -80,8 +80,8 @@ export default function PlansTab() {
         </Text>
         <Text style={s.sub}>
           {lang === 'de'
-            ? 'Alle Trainingspläne, die du erstellt hast'
-            : 'All training plans you have built'}
+            ? 'Tippe einen Plan, um Status & Details zu sehen'
+            : 'Tap any plan to see status and details'}
         </Text>
       </View>
 
@@ -108,14 +108,12 @@ export default function PlansTab() {
             const iconName = ICON_MAP[prog.icon || ''] || 'barbell-outline';
             const diffColor = DIFFICULTY_COLOR[(prog.difficulty || '').toLowerCase()] || colors.accent;
             const statusLabel = STATUS_LABEL[prog.status]?.[lang] || prog.status.toUpperCase();
-            const isActive = prog.status === 'active';
             return (
               <TouchableOpacity
                 key={prog.id}
                 style={[s.programCard, { borderColor: diffColor }]}
                 activeOpacity={0.8}
-                onPress={() => isActive ? router.push('/program') : undefined}
-                disabled={!isActive}
+                onPress={() => router.push({ pathname: '/program', params: { id: prog.id } } as any)}
               >
                 <View style={s.programHead}>
                   <Ionicons name={iconName} size={22} color={diffColor} />

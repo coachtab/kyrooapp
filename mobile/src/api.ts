@@ -100,6 +100,7 @@ export const api = {
   programs: {
     generate:  (questionnaireId: number)              => req('POST',  '/api/programs/generate', { questionnaireId }),
     current:   ()                                     => req('GET',   '/api/programs/current'),
+    get:       (id: number)                            => req('GET',  `/api/programs/${id}`),
     list:      ()                                     => req('GET',   '/api/programs'),
     setStatus: (id: number, status: ProgramStatus)   => req('PATCH', `/api/programs/${id}/status`, { status }),
   },

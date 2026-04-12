@@ -35,12 +35,13 @@ export default function Generating() {
 
     const run = async () => {
       try {
-        await api.programs.generate(Number(questionnaireId));
+        const result = await api.programs.generate(Number(questionnaireId));
         clearInterval(timer);
-        router.replace('/program');
+        // Navigate to the newly created program's detail page
+        router.replace({ pathname: '/program', params: { id: result.id } } as any);
       } catch {
         clearInterval(timer);
-        router.replace('/program');
+        router.replace('/(tabs)/plans');
       }
     };
     run();

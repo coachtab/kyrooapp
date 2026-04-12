@@ -9,7 +9,7 @@ const t = {
   en: {
     // ── Tabs ──────────────────────────────────────────────────────────
     tab_home:     'Home',
-    tab_plans:    'Plans',
+    tab_plans:    'My Plans',
     tab_track:    'Track',
     tab_profile:  'Profile',
 
@@ -269,7 +269,7 @@ const t = {
   de: {
     // ── Tabs ──────────────────────────────────────────────────────────
     tab_home:     'Start',
-    tab_plans:    'Pläne',
+    tab_plans:    'Meine Pläne',
     tab_track:    'Tracking',
     tab_profile:  'Profil',
 

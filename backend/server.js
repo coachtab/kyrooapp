@@ -573,17 +573,11 @@ app.post('/api/programs/generate', auth, async (req, res) => {
       days = buildWeeks(category, frequency, totalWeeks);
     }
 
-    // Auto-assign status: 'active' if none exists, 'queued' otherwise
-    const activeCheck = await pool.query(
-      `SELECT id FROM programs WHERE user_id = $1 AND status = 'active' LIMIT 1`,
-      [req.user.id]
-    );
-    const autoStatus = activeCheck.rows.length ? 'queued' : 'active';
-
+    // New programs are always queued — the user must explicitly start them
     const progRes = await pool.query(
       `INSERT INTO programs (user_id, plan_id, questionnaire_id, total_weeks, name, status, ai_generated)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
-      [req.user.id, q.plan_id, questionnaireId, totalWeeks, programName, autoStatus, aiGenerated]
+       VALUES ($1,$2,$3,$4,$5,'queued',$6) RETURNING id`,
+      [req.user.id, q.plan_id, questionnaireId, totalWeeks, programName, aiGenerated]
     );
     const programId = progRes.rows[0].id;
 
@@ -702,6 +696,44 @@ app.get('/api/programs/current', auth, async (req, res) => {
     res.json(program);
   } catch (err) {
     console.error('[current program]', err.message);
+    res.status(500).json({ error: 'Failed to load program' });
+  }
+});
+
+// ── Routes: Program detail by id (must be after /current to avoid shadowing) ─
+app.get('/api/programs/:id', auth, async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: 'Invalid id' });
+
+  try {
+    const progRes = await pool.query(
+      `SELECT p.*, COALESCE(p.name, pl.name) AS name, pl.category, pl.icon, pl.difficulty,
+              p.total_weeks AS weeks, p.current_week AS week,
+              (SELECT COUNT(*) FROM program_days WHERE program_id = p.id AND focus NOT ILIKE '%rest%') AS days_per_week
+       FROM programs p
+       LEFT JOIN plans pl ON pl.id = p.plan_id
+       WHERE p.id = $1 AND p.user_id = $2
+       LIMIT 1`,
+      [id, req.user.id]
+    );
+    if (!progRes.rows.length) return res.status(404).json({ error: 'Program not found' });
+
+    const program = progRes.rows[0];
+    const daysRes = await pool.query(
+      'SELECT * FROM program_days WHERE program_id = $1 ORDER BY sort_order',
+      [program.id]
+    );
+
+    program.days = daysRes.rows.map((d, i) => ({
+      day_number: i + 1,
+      name:       d.day_name,
+      focus:      d.focus,
+      exercises:  (d.exercises || []).map(parseExercise),
+    }));
+
+    res.json(program);
+  } catch (err) {
+    console.error('[program by id]', err.message);
     res.status(500).json({ error: 'Failed to load program' });
   }
 });
