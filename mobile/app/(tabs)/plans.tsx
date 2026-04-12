@@ -86,24 +86,7 @@ export default function PlansTab() {
       </View>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-        {programs.length === 0 ? (
-          <View style={s.emptyBlock}>
-            <Ionicons name="barbell-outline" size={48} color={colors.muted} style={{ opacity: 0.5, marginBottom: 14 }} />
-            <Text style={s.emptyTitle}>
-              {lang === 'de' ? 'Noch keine Pläne' : 'No plans yet'}
-            </Text>
-            <Text style={s.emptySub}>
-              {lang === 'de'
-                ? 'Starte auf der Startseite und erstelle deinen ersten Plan'
-                : 'Head to Home to build your first plan'}
-            </Text>
-            <TouchableOpacity style={s.emptyBtn} onPress={() => router.push('/(tabs)')} activeOpacity={0.85}>
-              <Text style={s.emptyBtnText}>
-                {lang === 'de' ? 'Plan erstellen' : 'Build a plan'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
+        {programs.length === 0 ? null : (
           programs.map(prog => {
             const iconName = ICON_MAP[prog.icon || ''] || 'barbell-outline';
             const diffColor = DIFFICULTY_COLOR[(prog.difficulty || '').toLowerCase()] || colors.accent;
@@ -157,13 +140,6 @@ const s = StyleSheet.create({
   sub:    { fontSize: 14, color: colors.muted, marginTop: 6 },
 
   scroll: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
-
-  // Empty state
-  emptyBlock:   { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 20 },
-  emptyTitle:   { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 6 },
-  emptySub:     { fontSize: 14, color: colors.muted, textAlign: 'center', marginBottom: 24, lineHeight: 21 },
-  emptyBtn:     { backgroundColor: colors.cta, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
-  emptyBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
 
   // Program card
   programCard:    { backgroundColor: '#0d0d0d', borderRadius: 14, borderWidth: 1.5, padding: 16, gap: 10 },
