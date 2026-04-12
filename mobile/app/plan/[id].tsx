@@ -74,13 +74,9 @@ export default function PlanDetail() {
           <Text style={s.backText}>{tr('plans_accent')}</Text>
         </TouchableOpacity>
 
-        {/* Hero icon — circle with difficulty-colored border */}
-        <View style={[s.heroIcon, { borderColor: diffColor, backgroundColor: diffColor + '15' }]}>
-          <Ionicons name={iconName} size={44} color={diffColor} />
-        </View>
-
-        {/* Tags */}
+        {/* Icon + tags — inline row, same icon size as home list */}
         <View style={s.tags}>
+          <Ionicons name={iconName} size={20} color={diffColor} />
           <Tag>{plan.category || 'GENERAL'}</Tag>
           <Tag color={diffColor}>{plan.difficulty?.toUpperCase() || 'ALL LEVELS'}</Tag>
         </View>
@@ -144,20 +140,9 @@ const s = StyleSheet.create({
   back:        { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
   backText:    { fontSize: 16, color: colors.text },
 
-  heroIcon:    {
-    width:           84,
-    height:          84,
-    borderRadius:    42,
-    borderWidth:     2,
-    alignItems:      'center',
-    justifyContent:  'center',
-    alignSelf:       'center',
-    marginBottom:    20,
-  },
-
-  tags:        { flexDirection: 'row', gap: 8, marginBottom: 14, justifyContent: 'center' },
-  title:       { fontSize: 28, fontWeight: '800', color: colors.text, marginBottom: 10, textAlign: 'center' },
-  desc:        { fontSize: 15, color: colors.muted, lineHeight: 23, marginBottom: 24, textAlign: 'center' },
+  tags:        { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
+  title:       { fontSize: 28, fontWeight: '800', color: colors.text, marginBottom: 10 },
+  desc:        { fontSize: 15, color: colors.muted, lineHeight: 23, marginBottom: 24 },
 
   statsRow:    { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 18, padding: 20, marginBottom: 16, borderWidth: 1.5 },
   stat:        { flex: 1, alignItems: 'center' },
