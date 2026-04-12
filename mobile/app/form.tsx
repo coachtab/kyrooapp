@@ -717,8 +717,11 @@ export default function Form() {
         {/* Nav */}
         <View style={s.nav}>
           {step > 0 && (
-            <TouchableOpacity style={s.back} onPress={() => setStep(s => s - 1)}>
-              <Text style={s.backText}>{tr('form_back')}</Text>
+            <TouchableOpacity
+              style={[s.back, { borderColor: diffColor, backgroundColor: diffColor + '10' }]}
+              onPress={() => setStep(s => s - 1)}
+            >
+              <Text style={[s.backText, { color: diffColor }]}>{tr('form_back')}</Text>
             </TouchableOpacity>
           )}
           {(current.type === 'slider' || current.type === 'height' || current.type === 'weight') && step < total - 1 && (
