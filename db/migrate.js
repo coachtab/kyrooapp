@@ -38,6 +38,7 @@ async function migrate() {
       { name: 'HIIT Cardio Blast',             difficulty: 'beginner',     duration_weeks:  6, frequency_per_week: 4, total_weeks:  6 },
       { name: 'Mobility & Recovery',           difficulty: 'beginner',     duration_weeks:  8, frequency_per_week: 5, total_weeks:  8 },
       { name: 'Calisthenics & Skills',         difficulty: 'intermediate', duration_weeks: 12, frequency_per_week: 4, total_weeks: 12 },
+      { name: 'Sport Season Prep',             difficulty: 'intermediate', duration_weeks: 10, frequency_per_week: 4, total_weeks: 10 },
     ];
 
     console.log('Updating plan metadata...');

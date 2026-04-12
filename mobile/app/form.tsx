@@ -407,6 +407,36 @@ const EN: Record<string, Step[]> = {
     { key: 'days_per_week', question: 'How many days per week', questionAccent: 'can you train?', type: 'slider', min: 3, max: 6, unit: ' days' },
     { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
   ],
+
+  'SPORT PREP': [
+    { key: 'target_sport', question: 'Which sport are you', questionAccent: 'training for?', hint: 'Your whole program will be built around this', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Boxing / combat',      icon: 'hand-left-outline'    },
+        { label: 'Cycling',              icon: 'bicycle-outline'      },
+        { label: 'Triathlon',            icon: 'water-outline'        },
+        { label: 'Climbing',             icon: 'trending-up-outline'  },
+        { label: 'BJJ / grappling',      icon: 'body-outline'         },
+        { label: 'Soccer / football',    icon: 'football-outline'     },
+        { label: 'Tennis / racket',      icon: 'tennisball-outline'   },
+        { label: 'Basketball / team',    icon: 'basketball-outline'   },
+      ]},
+    { key: 'season_timing', question: 'When is your next', questionAccent: 'competition?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Within 4 weeks',        icon: 'alarm-outline'    },
+        { label: '4–8 weeks',             icon: 'calendar-outline' },
+        { label: '8–16 weeks',            icon: 'hourglass-outline'},
+        { label: 'No competition',        icon: 'infinite-outline' },
+      ]},
+    { key: 'sport_focus', question: 'What do you need', questionAccent: 'most work on?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Power & explosiveness', icon: 'flash-outline'   },
+        { label: 'Endurance & stamina',   icon: 'pulse-outline'   },
+        { label: 'Speed & agility',       icon: 'walk-outline'    },
+        { label: 'Strength foundation',   icon: 'barbell-outline' },
+      ]},
+    { key: 'days_per_week', question: 'How many prep sessions', questionAccent: 'per week?', hint: 'On top of your sport practice', type: 'slider', min: 3, max: 6, unit: ' days' },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
+  ],
 };
 
 const EN_DEFAULT: Step[] = [
@@ -697,6 +727,36 @@ const DE: Record<string, Step[]> = {
         { label: 'Outdoor Calisthenics-Park', icon: 'leaf-outline'      },
       ]},
     { key: 'days_per_week', question: 'Wie viele Tage pro Woche', questionAccent: 'kannst du trainieren?', type: 'slider', min: 3, max: 6, unit: ' Tage' },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+  ],
+
+  'SPORT PREP': [
+    { key: 'target_sport', question: 'Für welche Sportart', questionAccent: 'trainierst du?', hint: 'Dein gesamtes Programm wird darauf aufgebaut', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Boxen / Kampfsport',   icon: 'hand-left-outline'    },
+        { label: 'Radfahren',            icon: 'bicycle-outline'      },
+        { label: 'Triathlon',            icon: 'water-outline'        },
+        { label: 'Klettern',             icon: 'trending-up-outline'  },
+        { label: 'BJJ / Grappling',      icon: 'body-outline'         },
+        { label: 'Fußball',              icon: 'football-outline'     },
+        { label: 'Tennis / Schläger',    icon: 'tennisball-outline'   },
+        { label: 'Basketball / Team',    icon: 'basketball-outline'   },
+      ]},
+    { key: 'season_timing', question: 'Wann ist dein nächster', questionAccent: 'Wettkampf?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'In 4 Wochen',           icon: 'alarm-outline'    },
+        { label: '4–8 Wochen',            icon: 'calendar-outline' },
+        { label: '8–16 Wochen',           icon: 'hourglass-outline'},
+        { label: 'Kein Wettkampf',        icon: 'infinite-outline' },
+      ]},
+    { key: 'sport_focus', question: 'Woran musst du am meisten', questionAccent: 'arbeiten?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Power & Explosivität',  icon: 'flash-outline'   },
+        { label: 'Ausdauer',              icon: 'pulse-outline'   },
+        { label: 'Schnelligkeit & Agilität', icon: 'walk-outline' },
+        { label: 'Kraft-Grundlagen',      icon: 'barbell-outline' },
+      ]},
+    { key: 'days_per_week', question: 'Wie viele Prep-Einheiten', questionAccent: 'pro Woche?', hint: 'Zusätzlich zum eigentlichen Training', type: 'slider', min: 3, max: 6, unit: ' Tage' },
     { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
   ],
 };

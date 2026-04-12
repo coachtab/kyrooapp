@@ -242,6 +242,7 @@ const t = {
     plan_name_HIGH_INTENSITY:'HIIT Cardio Blast',
     plan_name_MOBILITY:      'Mobility & Recovery',
     plan_name_CALISTHENICS:  'Calisthenics & Skills',
+    plan_name_SPORT_PREP:    'Sport Season Prep',
 
     // ── Plan descriptions (keyed by category) ────────────────────────────
     plan_desc_FAT_LOSS:      'Lose body fat by moving more and eating smarter. A mix of cardio (heart-pumping exercise) and strength (lifting) sessions done at your own pace.',
@@ -256,6 +257,7 @@ const t = {
     plan_desc_HIGH_INTENSITY:'HIIT stands for High-Intensity Interval Training — short bursts of hard effort followed by rest. Burns lots of calories in less time. Every session uses a different fun format.',
     plan_desc_MOBILITY:      'Daily stretching, yoga-style flows, and recovery routines. Perfect as a standalone program or alongside any other plan. Undoes desk posture, unlocks tight hips, and keeps you moving well as you age.',
     plan_desc_CALISTHENICS:  'Chase specific calisthenics skills — muscle-up, handstand, front lever, one-arm pull-up. Unlike general bodyweight training, this is a progression-based program where each week brings you closer to a specific skill milestone.',
+    plan_desc_SPORT_PREP:    'Sport-specific conditioning for boxing, cycling, triathlon, climbing, BJJ, and any team sport. Pick your sport, tell us when your season or competition starts, and Kyroo builds a periodised program around it.',
 
     // ── Plan program overviews (keyed by category) ───────────────────────
     plan_detail_FAT_LOSS:
@@ -350,6 +352,14 @@ const t = {
       '• Weeks 7–9 — negatives, assisted reps, and tempo work\n' +
       '• Weeks 10–12 — full-skill attempts and refinement\n\n' +
       '4 sessions per week · 45–75 minutes · pull-up bar required',
+
+    plan_detail_SPORT_PREP:
+      '10 weeks of sport-specific conditioning, periodised around your season.\n\n' +
+      '• Weeks 1–3 — build the physical base (GPP, mobility, baseline strength)\n' +
+      '• Weeks 4–6 — sport-specific power, speed, and energy systems\n' +
+      '• Weeks 7–9 — peak intensity and match/race simulation\n' +
+      '• Week 10 — taper and peak for competition\n\n' +
+      '4 sessions per week · 45–75 minutes each',
   },
 
   de: {
@@ -588,6 +598,7 @@ const t = {
     plan_name_HIGH_INTENSITY:'HIIT Cardio Blast',
     plan_name_MOBILITY:      'Beweglichkeit & Regeneration',
     plan_name_CALISTHENICS:  'Calisthenics & Skills',
+    plan_name_SPORT_PREP:    'Sportartenspezifische Vorbereitung',
 
     // ── Planbeschreibungen (nach Kategorie) ──────────────────────────────
     plan_desc_FAT_LOSS:      'Körperfett abbauen durch mehr Bewegung und cleveres Essen. Eine Mischung aus Cardio- (Herztraining) und Krafteinheiten (Gewichtheben) — in deinem eigenen Tempo.',
@@ -602,6 +613,7 @@ const t = {
     plan_desc_HIGH_INTENSITY:'HIIT steht für High-Intensity Interval Training — kurze intensive Belastungsphasen gefolgt von Erholung. Verbrennt viele Kalorien in kurzer Zeit. Jede Einheit hat ein anderes Format.',
     plan_desc_MOBILITY:      'Tägliches Stretching, Yoga-Flows und Regenerationsroutinen. Perfekt als eigenständiges Programm oder als Ergänzung zu anderen Plänen. Löst Verspannungen vom Schreibtisch, öffnet enge Hüften und hält dich ein Leben lang beweglich.',
     plan_desc_CALISTHENICS:  'Erreiche konkrete Calisthenics-Skills — Muscle-up, Handstand, Front Lever, einarmige Klimmzüge. Im Gegensatz zum allgemeinen Bodyweight-Training ist das ein progressionsbasiertes Programm, bei dem dich jede Woche einem konkreten Skill näher bringt.',
+    plan_desc_SPORT_PREP:    'Sportartenspezifisches Training für Boxen, Radfahren, Triathlon, Klettern, BJJ und jede Mannschaftssportart. Wähle deine Sportart, sag uns wann deine Saison oder dein Wettkampf startet — Kyroo baut ein periodisiertes Programm drumherum.',
 
     // ── Programmübersichten (nach Kategorie) ─────────────────────────────
     plan_detail_FAT_LOSS:
@@ -696,6 +708,14 @@ const t = {
       '• Wochen 7–9 — Negativwiederholungen, assistierte Reps, Tempo-Arbeit\n' +
       '• Wochen 10–12 — Versuche am vollständigen Skill und Verfeinerung\n\n' +
       '4 Einheiten pro Woche · je 45–75 Minuten · Klimmzugstange nötig',
+
+    plan_detail_SPORT_PREP:
+      '10 Wochen sportartenspezifisches Training, periodisiert nach deiner Saison.\n\n' +
+      '• Wochen 1–3 — Grundlagen aufbauen (GPP, Beweglichkeit, Basiskraft)\n' +
+      '• Wochen 4–6 — sportspezifische Power, Schnelligkeit, Energiesysteme\n' +
+      '• Wochen 7–9 — Spitzenintensität und Wettkampfsimulation\n' +
+      '• Woche 10 — Taper und Formaufbau zum Wettkampf\n\n' +
+      '4 Einheiten pro Woche · je 45–75 Minuten',
   },
 } as const;
 

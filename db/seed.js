@@ -29,6 +29,7 @@ const plans = [
   { name: 'HIIT Cardio Blast',      description: 'HIIT stands for High-Intensity Interval Training — short bursts of hard effort followed by rest. Burns lots of calories in less time. Every session uses a different fun format.',                      tag: 'YOUR PACE', category: 'HIGH INTENSITY',  icon: 'zap',  color: '#F44336', sort_order: 10 },
   { name: 'Mobility & Recovery',    description: 'Daily stretching, yoga-style flows, and recovery routines. Perfect as a standalone program or alongside any other plan. Undoes desk posture and keeps you moving well.',                                 tag: 'DAILY',     category: 'MOBILITY',        icon: 'flower', color: '#34D399', sort_order: 11 },
   { name: 'Calisthenics & Skills',  description: 'Chase specific calisthenics skills — muscle-up, handstand, front lever, one-arm pull-up. Progression-based training toward concrete skill milestones.',                                                  tag: 'SKILL',     category: 'CALISTHENICS',    icon: 'body',   color: '#EAB308', sort_order: 12 },
+  { name: 'Sport Season Prep',      description: 'Sport-specific conditioning for boxing, cycling, triathlon, climbing, BJJ, and any team sport. Periodised around your season.',                                                                           tag: 'PERIODISED',category: 'SPORT PREP',      icon: 'trophy', color: '#3B82F6', sort_order: 13 },
 ];
 
 const habits = [
