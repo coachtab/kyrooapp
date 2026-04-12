@@ -241,6 +241,7 @@ const t = {
     plan_name_FUNCTIONAL:    'CrossFit-Style Training',
     plan_name_HIGH_INTENSITY:'HIIT Cardio Blast',
     plan_name_MOBILITY:      'Mobility & Recovery',
+    plan_name_CALISTHENICS:  'Calisthenics & Skills',
 
     // ── Plan descriptions (keyed by category) ────────────────────────────
     plan_desc_FAT_LOSS:      'Lose body fat by moving more and eating smarter. A mix of cardio (heart-pumping exercise) and strength (lifting) sessions done at your own pace.',
@@ -254,6 +255,7 @@ const t = {
     plan_desc_FUNCTIONAL:    'CrossFit (CF) mixes weightlifting, gymnastics, and fast cardio workouts called WODs (Workout of the Day). Every session is different and includes both easy (scaled) and hard (Rx) options.',
     plan_desc_HIGH_INTENSITY:'HIIT stands for High-Intensity Interval Training — short bursts of hard effort followed by rest. Burns lots of calories in less time. Every session uses a different fun format.',
     plan_desc_MOBILITY:      'Daily stretching, yoga-style flows, and recovery routines. Perfect as a standalone program or alongside any other plan. Undoes desk posture, unlocks tight hips, and keeps you moving well as you age.',
+    plan_desc_CALISTHENICS:  'Chase specific calisthenics skills — muscle-up, handstand, front lever, one-arm pull-up. Unlike general bodyweight training, this is a progression-based program where each week brings you closer to a specific skill milestone.',
 
     // ── Plan program overviews (keyed by category) ───────────────────────
     plan_detail_FAT_LOSS:
@@ -340,6 +342,14 @@ const t = {
       '• Weeks 5–6 — yoga flows and deep stretches\n' +
       '• Weeks 7–8 — active recovery, foam rolling, long holds\n\n' +
       '5 sessions per week · 15–25 minutes daily',
+
+    plan_detail_CALISTHENICS:
+      '12 weeks of skill progressions — chase your first muscle-up, handstand, or front lever.\n\n' +
+      '• Weeks 1–3 — build the strength base (pull-ups, dips, L-sit, scap control)\n' +
+      '• Weeks 4–6 — skill-specific progressions and static holds\n' +
+      '• Weeks 7–9 — negatives, assisted reps, and tempo work\n' +
+      '• Weeks 10–12 — full-skill attempts and refinement\n\n' +
+      '4 sessions per week · 45–75 minutes · pull-up bar required',
   },
 
   de: {
@@ -577,6 +587,7 @@ const t = {
     plan_name_FUNCTIONAL:    'CrossFit-Style Training',
     plan_name_HIGH_INTENSITY:'HIIT Cardio Blast',
     plan_name_MOBILITY:      'Beweglichkeit & Regeneration',
+    plan_name_CALISTHENICS:  'Calisthenics & Skills',
 
     // ── Planbeschreibungen (nach Kategorie) ──────────────────────────────
     plan_desc_FAT_LOSS:      'Körperfett abbauen durch mehr Bewegung und cleveres Essen. Eine Mischung aus Cardio- (Herztraining) und Krafteinheiten (Gewichtheben) — in deinem eigenen Tempo.',
@@ -590,6 +601,7 @@ const t = {
     plan_desc_FUNCTIONAL:    'CrossFit (CF) kombiniert Gewichtheben, Turnen und schnelle Cardio-Einheiten — sogenannte WODs (Workout of the Day). Jede Einheit ist anders und bietet eine leichtere (Scaled) sowie eine volle (Rx) Option.',
     plan_desc_HIGH_INTENSITY:'HIIT steht für High-Intensity Interval Training — kurze intensive Belastungsphasen gefolgt von Erholung. Verbrennt viele Kalorien in kurzer Zeit. Jede Einheit hat ein anderes Format.',
     plan_desc_MOBILITY:      'Tägliches Stretching, Yoga-Flows und Regenerationsroutinen. Perfekt als eigenständiges Programm oder als Ergänzung zu anderen Plänen. Löst Verspannungen vom Schreibtisch, öffnet enge Hüften und hält dich ein Leben lang beweglich.',
+    plan_desc_CALISTHENICS:  'Erreiche konkrete Calisthenics-Skills — Muscle-up, Handstand, Front Lever, einarmige Klimmzüge. Im Gegensatz zum allgemeinen Bodyweight-Training ist das ein progressionsbasiertes Programm, bei dem dich jede Woche einem konkreten Skill näher bringt.',
 
     // ── Programmübersichten (nach Kategorie) ─────────────────────────────
     plan_detail_FAT_LOSS:
@@ -676,6 +688,14 @@ const t = {
       '• Wochen 5–6 — Yoga-Flows und tiefe Dehnungen\n' +
       '• Wochen 7–8 — aktive Erholung, Faszienrolle, lange Haltedauern\n\n' +
       '5 Einheiten pro Woche · täglich 15–25 Minuten',
+
+    plan_detail_CALISTHENICS:
+      '12 Wochen Skill-Progressionen — trainiere deinen ersten Muscle-up, Handstand oder Front Lever.\n\n' +
+      '• Wochen 1–3 — Kraftbasis aufbauen (Klimmzüge, Dips, L-Sit, Schulterblattkontrolle)\n' +
+      '• Wochen 4–6 — skill-spezifische Progressionen und statische Halten\n' +
+      '• Wochen 7–9 — Negativwiederholungen, assistierte Reps, Tempo-Arbeit\n' +
+      '• Wochen 10–12 — Versuche am vollständigen Skill und Verfeinerung\n\n' +
+      '4 Einheiten pro Woche · je 45–75 Minuten · Klimmzugstange nötig',
   },
 } as const;
 

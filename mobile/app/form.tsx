@@ -379,6 +379,34 @@ const EN: Record<string, Step[]> = {
     { key: 'days_per_week', question: 'How many days per week', questionAccent: 'can you stretch?', hint: 'Daily works great — even 10 minutes helps', type: 'slider', min: 3, max: 7, unit: ' days' },
     { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
   ],
+
+  'CALISTHENICS': [
+    { key: 'target_skill', question: 'Which skill are you', questionAccent: 'chasing?', hint: 'Your whole program will be built around this', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Muscle-up',          icon: 'arrow-up-circle-outline' },
+        { label: 'Handstand',          icon: 'accessibility-outline'   },
+        { label: 'Front lever',        icon: 'resize-outline'          },
+        { label: 'First pull-up',      icon: 'fitness-outline'         },
+        { label: 'Pistol squat',       icon: 'walk-outline'            },
+        { label: 'Human flag',         icon: 'flag-outline'            },
+      ]},
+    { key: 'calisthenics_level', question: 'Your', questionAccent: 'current level?', type: 'levelSelect',
+      iconOptions: [
+        { label: 'Beginner',     subtitle: "Can't do a full pull-up yet",            ringPercent: 25  },
+        { label: 'Intermediate', subtitle: '5+ pull-ups, basic pushing',             ringPercent: 50  },
+        { label: 'Advanced',     subtitle: 'I have some skills already',             ringPercent: 75  },
+        { label: 'Elite',        subtitle: 'Multiple skills mastered',               ringPercent: 100 },
+      ]},
+    { key: 'cal_equipment', question: 'What equipment do', questionAccent: 'you have?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Pull-up bar only',       icon: 'remove-outline'    },
+        { label: 'Bar + parallettes',      icon: 'grid-outline'      },
+        { label: 'Bar + rings + parallettes', icon: 'ellipse-outline'},
+        { label: 'Outdoor calisthenics park', icon: 'leaf-outline'   },
+      ]},
+    { key: 'days_per_week', question: 'How many days per week', questionAccent: 'can you train?', type: 'slider', min: 3, max: 6, unit: ' days' },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
+  ],
 };
 
 const EN_DEFAULT: Step[] = [
@@ -641,6 +669,34 @@ const DE: Record<string, Step[]> = {
         { label: 'Reha nach Verletzung',        icon: 'medkit-outline'  },
       ]},
     { key: 'days_per_week', question: 'Wie viele Tage pro Woche', questionAccent: 'kannst du dehnen?', hint: 'Täglich ist super — schon 10 Minuten helfen', type: 'slider', min: 3, max: 7, unit: ' Tage' },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+  ],
+
+  'CALISTHENICS': [
+    { key: 'target_skill', question: 'Welchen Skill willst du', questionAccent: 'erreichen?', hint: 'Dein gesamtes Programm wird darauf aufgebaut', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Muscle-up',            icon: 'arrow-up-circle-outline' },
+        { label: 'Handstand',            icon: 'accessibility-outline'   },
+        { label: 'Front Lever',          icon: 'resize-outline'          },
+        { label: 'Erster Klimmzug',      icon: 'fitness-outline'         },
+        { label: 'Pistol Squat',         icon: 'walk-outline'            },
+        { label: 'Human Flag',           icon: 'flag-outline'            },
+      ]},
+    { key: 'calisthenics_level', question: 'Dein', questionAccent: 'aktuelles Level?', type: 'levelSelect',
+      iconOptions: [
+        { label: 'Anfänger',        subtitle: 'Noch kein vollständiger Klimmzug',   ringPercent: 25  },
+        { label: 'Fortgeschritten', subtitle: '5+ Klimmzüge, einfache Drückübungen', ringPercent: 50  },
+        { label: 'Profi',           subtitle: 'Einige Skills beherrsche ich schon', ringPercent: 75  },
+        { label: 'Elite',           subtitle: 'Mehrere Skills gemeistert',          ringPercent: 100 },
+      ]},
+    { key: 'cal_equipment', question: 'Welches Equipment', questionAccent: 'hast du?', type: 'iconSelect',
+      iconOptions: [
+        { label: 'Nur Klimmzugstange',        icon: 'remove-outline'    },
+        { label: 'Stange + Parallettes',      icon: 'grid-outline'      },
+        { label: 'Stange + Ringe + Parallettes', icon: 'ellipse-outline' },
+        { label: 'Outdoor Calisthenics-Park', icon: 'leaf-outline'      },
+      ]},
+    { key: 'days_per_week', question: 'Wie viele Tage pro Woche', questionAccent: 'kannst du trainieren?', type: 'slider', min: 3, max: 6, unit: ' Tage' },
     { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
   ],
 };

@@ -37,6 +37,7 @@ async function migrate() {
       { name: 'CrossFit-Style Training',       difficulty: 'advanced',     duration_weeks: 12, frequency_per_week: 5, total_weeks: 12 },
       { name: 'HIIT Cardio Blast',             difficulty: 'beginner',     duration_weeks:  6, frequency_per_week: 4, total_weeks:  6 },
       { name: 'Mobility & Recovery',           difficulty: 'beginner',     duration_weeks:  8, frequency_per_week: 5, total_weeks:  8 },
+      { name: 'Calisthenics & Skills',         difficulty: 'intermediate', duration_weeks: 12, frequency_per_week: 4, total_weeks: 12 },
     ];
 
     console.log('Updating plan metadata...');
