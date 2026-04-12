@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Alert } from 'react-native';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Alert, Animated, PanResponder } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -117,6 +117,69 @@ export default function ProgramScreen() {
   const statusLabel = STATUS_LABEL[program.status]?.[lang] || program.status.toUpperCase();
   const progressPct = Math.min(100, Math.round((program.week / program.weeks) * 100));
 
+  // Swipe gesture hint for start/pause
+  const SwipeableCard = ({ children }: { children: React.ReactNode }) => {
+    const dragX = useRef(new Animated.Value(0)).current;
+    const SWIPE_THRESHOLD = 80;
+
+    const canStart = program.status === 'queued' || program.status === 'paused';
+    const canPause = program.status === 'active';
+
+    const panResponder = useRef(
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy),
+        onPanResponderMove: (_, g) => {
+          // Left swipe (negative dx) → start, right swipe → pause
+          if (g.dx < 0 && canStart) dragX.setValue(Math.max(g.dx, -160));
+          else if (g.dx > 0 && canPause) dragX.setValue(Math.min(g.dx, 160));
+        },
+        onPanResponderRelease: (_, g) => {
+          if (g.dx < -SWIPE_THRESHOLD && canStart) {
+            Animated.timing(dragX, { toValue: -160, duration: 150, useNativeDriver: false }).start(() => {
+              dragX.setValue(0);
+              changeStatus('active',
+                lang === 'de' ? 'Aktuelles aktives Programm wird pausiert. Fortfahren?' : 'Your current active program will be paused. Continue?'
+              );
+            });
+          } else if (g.dx > SWIPE_THRESHOLD && canPause) {
+            Animated.timing(dragX, { toValue: 160, duration: 150, useNativeDriver: false }).start(() => {
+              dragX.setValue(0);
+              changeStatus('paused');
+            });
+          } else {
+            Animated.spring(dragX, { toValue: 0, useNativeDriver: false, friction: 6 }).start();
+          }
+        },
+      })
+    ).current;
+
+    const startOpacity = dragX.interpolate({ inputRange: [-160, -20, 0], outputRange: [1, 0.3, 0], extrapolate: 'clamp' });
+    const pauseOpacity = dragX.interpolate({ inputRange: [0, 20, 160], outputRange: [0, 0.3, 1], extrapolate: 'clamp' });
+
+    return (
+      <View style={s.swipeWrap}>
+        {/* Background hints */}
+        {canStart && (
+          <Animated.View style={[s.swipeHint, s.swipeHintStart, { backgroundColor: diffColor, opacity: startOpacity }]}>
+            <Ionicons name="play" size={22} color="#fff" />
+            <Text style={s.swipeHintText}>{lang === 'de' ? 'Starten' : 'Start'}</Text>
+          </Animated.View>
+        )}
+        {canPause && (
+          <Animated.View style={[s.swipeHint, s.swipeHintPause, { backgroundColor: diffColor + '50', opacity: pauseOpacity }]}>
+            <Ionicons name="pause" size={22} color={diffColor} />
+            <Text style={[s.swipeHintText, { color: diffColor }]}>{lang === 'de' ? 'Pausieren' : 'Pause'}</Text>
+          </Animated.View>
+        )}
+
+        <Animated.View style={{ transform: [{ translateX: dragX }] }} {...panResponder.panHandlers}>
+          {children}
+        </Animated.View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
@@ -133,29 +196,43 @@ export default function ProgramScreen() {
           <Ionicons name={iconName} size={28} color={diffColor} />
         </View>
 
-        {/* Stats + progress */}
-        <View style={[s.statsCard, { borderColor: diffColor }]}>
-          <View style={s.statsRow}>
-            <View style={s.stat}>
-              <Text style={[s.statNum, { color: diffColor }]}>{program.week}</Text>
-              <Text style={s.statLabel}>{lang === 'de' ? 'Woche' : 'Week'}</Text>
+        {/* Stats + progress — swipeable: left=start, right=pause */}
+        <SwipeableCard>
+          <View style={[s.statsCard, { borderColor: diffColor }]}>
+            <View style={s.statsRow}>
+              <View style={s.stat}>
+                <Text style={[s.statNum, { color: diffColor }]}>{program.week}</Text>
+                <Text style={s.statLabel}>{lang === 'de' ? 'Woche' : 'Week'}</Text>
+              </View>
+              <View style={s.statDivider} />
+              <View style={s.stat}>
+                <Text style={[s.statNum, { color: diffColor }]}>{program.weeks}</Text>
+                <Text style={s.statLabel}>{lang === 'de' ? 'Gesamt' : 'Total'}</Text>
+              </View>
+              <View style={s.statDivider} />
+              <View style={s.stat}>
+                <Text style={[s.statNum, { color: diffColor }]}>{program.days_per_week}</Text>
+                <Text style={s.statLabel}>{lang === 'de' ? 'Pro Woche' : 'Per week'}</Text>
+              </View>
             </View>
-            <View style={s.statDivider} />
-            <View style={s.stat}>
-              <Text style={[s.statNum, { color: diffColor }]}>{program.weeks}</Text>
-              <Text style={s.statLabel}>{lang === 'de' ? 'Gesamt' : 'Total'}</Text>
+            <View style={s.progressTrack}>
+              <View style={[s.progressFill, { width: `${progressPct}%` as any, backgroundColor: diffColor }]} />
             </View>
-            <View style={s.statDivider} />
-            <View style={s.stat}>
-              <Text style={[s.statNum, { color: diffColor }]}>{program.days_per_week}</Text>
-              <Text style={s.statLabel}>{lang === 'de' ? 'Pro Woche' : 'Per week'}</Text>
-            </View>
+            <Text style={s.progressText}>{progressPct}%</Text>
           </View>
-          <View style={s.progressTrack}>
-            <View style={[s.progressFill, { width: `${progressPct}%` as any, backgroundColor: diffColor }]} />
-          </View>
-          <Text style={s.progressText}>{progressPct}%</Text>
-        </View>
+        </SwipeableCard>
+
+        {/* Swipe hint */}
+        {(program.status === 'queued' || program.status === 'paused') && (
+          <Text style={s.swipeTip}>
+            {lang === 'de' ? '← Wische nach links, um zu starten' : '← Swipe left to start'}
+          </Text>
+        )}
+        {program.status === 'active' && (
+          <Text style={s.swipeTip}>
+            {lang === 'de' ? 'Wische nach rechts, um zu pausieren →' : 'Swipe right to pause →'}
+          </Text>
+        )}
 
         {/* Status action buttons */}
         <View style={s.actions}>
@@ -255,6 +332,14 @@ const s = StyleSheet.create({
   backBtn:       { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   statusLabel:   { fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 2 },
   title:         { fontSize: 22, fontWeight: '800', color: colors.text },
+
+  // Swipeable wrapper + hints
+  swipeWrap:     { marginBottom: 8, position: 'relative' },
+  swipeHint:     { position: 'absolute', top: 0, bottom: 14, width: 120, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 6 },
+  swipeHintStart:{ right: 0 },
+  swipeHintPause:{ left: 0 },
+  swipeHintText: { fontSize: 13, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
+  swipeTip:      { fontSize: 12, color: colors.muted, textAlign: 'center', marginBottom: 20, fontStyle: 'italic' },
 
   // Stats card
   statsCard:     { backgroundColor: '#0d0d0d', borderRadius: 16, borderWidth: 1.5, padding: 18, marginBottom: 14 },
