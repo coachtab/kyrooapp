@@ -152,7 +152,7 @@ export default function HomeTab() {
 const s = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: '#000' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: 28, paddingTop: 48, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 28, paddingTop: 24, paddingBottom: 40 },
 
   // Headline — Ochy bold italic style
   headline:       { fontSize: 26, fontWeight: '800', color: colors.text, lineHeight: 34, marginBottom: 10 },
