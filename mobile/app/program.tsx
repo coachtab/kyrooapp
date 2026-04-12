@@ -113,9 +113,11 @@ export default function ProgramScreen() {
   );
 
   const iconName = ICON_MAP[program.icon || ''] || 'barbell-outline';
-  const diffColor = DIFFICULTY_COLOR[(program.difficulty || '').toLowerCase()] || colors.accent;
+  const isCompleted = program.status === 'completed';
+  const baseColor = DIFFICULTY_COLOR[(program.difficulty || '').toLowerCase()] || colors.accent;
+  const diffColor = isCompleted ? '#4CAF50' : baseColor;
   const statusLabel = STATUS_LABEL[program.status]?.[lang] || program.status.toUpperCase();
-  const progressPct = Math.min(100, Math.round((program.week / program.weeks) * 100));
+  const progressPct = isCompleted ? 100 : Math.min(100, Math.round((program.week / program.weeks) * 100));
 
   // Swipe gesture hint for start/pause
   const SwipeableCard = ({ children }: { children: React.ReactNode }) => {
@@ -198,7 +200,36 @@ export default function ProgramScreen() {
           <Ionicons name={iconName} size={28} color={diffColor} />
         </View>
 
+        {/* Completion hero — replaces swipe card when program is completed */}
+        {isCompleted && (
+          <View style={s.completionHero}>
+            <View style={s.trophyCircle}>
+              <Ionicons name="trophy" size={56} color="#4CAF50" />
+            </View>
+            <Text style={s.completionTitle}>
+              {lang === 'de' ? 'Programm ' : 'Program '}
+              <Text style={{ color: '#4CAF50' }}>{lang === 'de' ? 'abgeschlossen!' : 'completed!'}</Text>
+            </Text>
+            <Text style={s.completionSub}>
+              {lang === 'de'
+                ? `Du hast alle ${program.weeks} Wochen geschafft. Großartige Arbeit!`
+                : `You finished all ${program.weeks} weeks. Amazing work!`}
+            </Text>
+            <View style={s.completionBadges}>
+              <View style={s.completionBadge}>
+                <Ionicons name="calendar" size={14} color="#4CAF50" />
+                <Text style={s.completionBadgeText}>{program.weeks} {lang === 'de' ? 'Wochen' : 'weeks'}</Text>
+              </View>
+              <View style={s.completionBadge}>
+                <Ionicons name="checkmark-done" size={14} color="#4CAF50" />
+                <Text style={s.completionBadgeText}>100%</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Stats + progress — swipeable: left=start, right=pause */}
+        {!isCompleted && (
         <SwipeableCard>
           <View style={[s.statsCard, { borderColor: diffColor }]}>
             <View style={s.statsRow}>
@@ -223,14 +254,15 @@ export default function ProgramScreen() {
             <Text style={s.progressText}>{progressPct}%</Text>
           </View>
         </SwipeableCard>
+        )}
 
         {/* Swipe hint */}
-        {(program.status === 'queued' || program.status === 'paused') && (
+        {!isCompleted && (program.status === 'queued' || program.status === 'paused') && (
           <Text style={s.swipeTip}>
             {lang === 'de' ? '← Wische nach links, um zu starten' : '← Swipe left to start'}
           </Text>
         )}
-        {program.status === 'active' && (
+        {!isCompleted && program.status === 'active' && (
           <Text style={s.swipeTip}>
             {lang === 'de' ? 'Wische nach rechts, um zu pausieren →' : 'Swipe right to pause →'}
           </Text>
@@ -342,6 +374,62 @@ const s = StyleSheet.create({
   swipeHintPause:{ left: 0 },
   swipeHintText: { fontSize: 13, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
   swipeTip:      { fontSize: 12, color: colors.muted, textAlign: 'center', marginBottom: 20, fontStyle: 'italic' },
+
+  // Completion hero — replaces swipe card on completed programs
+  completionHero: {
+    backgroundColor:  '#0a1a0e',
+    borderWidth:      1.5,
+    borderColor:      '#4CAF50' + '60',
+    borderRadius:     18,
+    padding:          28,
+    alignItems:       'center',
+    marginBottom:     16,
+  },
+  trophyCircle: {
+    width:            96,
+    height:           96,
+    borderRadius:     48,
+    backgroundColor:  '#4CAF50' + '18',
+    borderWidth:      2,
+    borderColor:      '#4CAF50',
+    alignItems:       'center',
+    justifyContent:   'center',
+    marginBottom:     20,
+  },
+  completionTitle: {
+    fontSize:         24,
+    fontWeight:       '800',
+    color:            colors.text,
+    textAlign:        'center',
+    marginBottom:     8,
+  },
+  completionSub: {
+    fontSize:         14,
+    color:            colors.muted,
+    textAlign:        'center',
+    marginBottom:     18,
+    lineHeight:       21,
+  },
+  completionBadges: {
+    flexDirection:    'row',
+    gap:              10,
+  },
+  completionBadge: {
+    flexDirection:    'row',
+    alignItems:       'center',
+    gap:              6,
+    backgroundColor:  '#4CAF50' + '18',
+    borderWidth:      1,
+    borderColor:      '#4CAF50' + '50',
+    borderRadius:     10,
+    paddingHorizontal: 12,
+    paddingVertical:   6,
+  },
+  completionBadgeText: {
+    fontSize:         12,
+    fontWeight:       '700',
+    color:            '#4CAF50',
+  },
 
   // Stats card
   statsCard:     { backgroundColor: '#0d0d0d', borderRadius: 16, borderWidth: 1.5, padding: 18, marginBottom: 14 },

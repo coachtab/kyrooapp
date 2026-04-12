@@ -87,9 +87,10 @@ function SwipeableProgramCard({
   const demoOpacity = useRef(new Animated.Value(0)).current;
   const SWIPE_THRESHOLD = 70;
 
+  const isCompleted = prog.status === 'completed';
   // Any non-completed plan can be started (active plans stay active — no-op).
   // Only currently-active plans can be paused.
-  const canStart = prog.status !== 'completed';
+  const canStart = !isCompleted;
   const canPause = prog.status === 'active';
 
   // Demo animation — glove hand swipes left-right to teach the gesture
@@ -159,28 +160,45 @@ function SwipeableProgramCard({
         {...panResponder.panHandlers}
       >
         <TouchableOpacity
-          style={[cs.card, { borderColor: diffColor }]}
+          style={[
+            cs.card,
+            { borderColor: isCompleted ? '#4CAF50' + '80' : diffColor },
+            isCompleted && { backgroundColor: '#0a1a0e' },
+          ]}
           activeOpacity={0.85}
           onPress={onTap}
         >
+          {/* Completed ribbon — corner badge */}
+          {isCompleted && (
+            <View style={cs.completedBadge}>
+              <Ionicons name="trophy" size={12} color="#fff" />
+              <Text style={cs.completedBadgeText}>{lang === 'de' ? 'GESCHAFFT' : 'DONE'}</Text>
+            </View>
+          )}
+
           <View style={cs.head}>
-            <Ionicons name={iconName} size={22} color={diffColor} />
-            <Text style={cs.name} numberOfLines={1}>{prog.name}</Text>
-            {prog.ai_generated && <Ionicons name="sparkles" size={14} color={diffColor} />}
+            <Ionicons name={isCompleted ? 'checkmark-circle' : iconName} size={22} color={isCompleted ? '#4CAF50' : diffColor} />
+            <Text style={[cs.name, isCompleted && cs.nameCompleted]} numberOfLines={1}>{prog.name}</Text>
+            {prog.ai_generated && !isCompleted && <Ionicons name="sparkles" size={14} color={diffColor} />}
           </View>
           <View style={cs.meta}>
-            <Text style={[cs.status, { color: diffColor }]}>{statusLabel}</Text>
+            <Text style={[cs.status, { color: isCompleted ? '#4CAF50' : diffColor }]}>{statusLabel}</Text>
             <Text style={cs.dot}>·</Text>
             <Text style={cs.weeks}>
-              {lang === 'de'
-                ? `Woche ${prog.current_week}/${prog.total_weeks}`
-                : `Week ${prog.current_week}/${prog.total_weeks}`}
+              {isCompleted
+                ? (lang === 'de' ? `${prog.total_weeks} Wochen abgeschlossen` : `${prog.total_weeks} weeks finished`)
+                : lang === 'de'
+                  ? `Woche ${prog.current_week}/${prog.total_weeks}`
+                  : `Week ${prog.current_week}/${prog.total_weeks}`}
             </Text>
           </View>
           <View style={cs.track}>
             <View style={[
               cs.fill,
-              { width: `${Math.min(100, (prog.current_week / prog.total_weeks) * 100)}%` as any, backgroundColor: diffColor }
+              {
+                width: `${isCompleted ? 100 : Math.min(100, (prog.current_week / prog.total_weeks) * 100)}%` as any,
+                backgroundColor: isCompleted ? '#4CAF50' : diffColor,
+              },
             ]} />
           </View>
         </TouchableOpacity>
@@ -212,9 +230,25 @@ const cs = StyleSheet.create({
   hintLeft:   { left: 0 },
   hintText:   { fontSize: 12, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
 
-  card:       { backgroundColor: '#0d0d0d', borderRadius: 14, borderWidth: 1.5, padding: 16, gap: 10 },
+  card:       { backgroundColor: '#0d0d0d', borderRadius: 14, borderWidth: 1.5, padding: 16, gap: 10, overflow: 'hidden' },
   head:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
   name:       { flex: 1, fontSize: 16, fontWeight: '700', color: colors.text },
+  nameCompleted: { color: colors.muted, textDecorationLine: 'line-through' },
+
+  // Completed ribbon — corner badge
+  completedBadge: {
+    position:        'absolute',
+    top:             0,
+    right:           0,
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 10,
+    paddingVertical:   5,
+    borderBottomLeftRadius: 10,
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             4,
+  },
+  completedBadgeText: { fontSize: 10, fontWeight: '800', color: '#fff', letterSpacing: 1 },
   meta:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
   status:     { fontSize: 11, fontWeight: '800', letterSpacing: 1 },
   dot:        { fontSize: 12, color: colors.muted },
