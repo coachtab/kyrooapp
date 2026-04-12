@@ -636,6 +636,8 @@ export default function Form() {
   const [loading,     setLoading]     = useState(false);
   const [heightUnit,  setHeightUnit]  = useState<'cm' | 'ft'>('cm');
   const [weightUnit,  setWeightUnit]  = useState<'kg' | 'lbs'>('kg');
+  const [touchedKeys, setTouchedKeys] = useState<Set<string>>(new Set());
+  const touch = (key: string) => setTouchedKeys(s => (s.has(key) ? s : new Set(s).add(key)));
 
   const current    = STEPS[step];
   const total      = STEPS.length;
@@ -814,10 +816,12 @@ export default function Form() {
               ))}
             </View>
             <View style={s.measureDisplay}>
-              <Text style={s.measureVal}>
-                {heightUnit === 'cm'
-                  ? Math.round(answers.height_cm as number)
-                  : `${Math.floor((answers.height_cm as number) / 30.48)}'${Math.round(((answers.height_cm as number) / 2.54) % 12)}"`}
+              <Text style={[s.measureVal, !touchedKeys.has('height_cm') && { color: colors.muted }]}>
+                {!touchedKeys.has('height_cm')
+                  ? '—'
+                  : heightUnit === 'cm'
+                    ? Math.round(answers.height_cm as number)
+                    : `${Math.floor((answers.height_cm as number) / 30.48)}'${Math.round(((answers.height_cm as number) / 2.54) % 12)}"`}
               </Text>
               <Text style={s.measureUnit}>{heightUnit}</Text>
             </View>
@@ -830,7 +834,7 @@ export default function Form() {
               minimumTrackTintColor={diffColor}
               maximumTrackTintColor={colors.border}
               thumbTintColor={diffColor}
-              onValueChange={val => setAnswers(a => ({ ...a, height_cm: val }))}
+              onValueChange={val => { touch('height_cm'); setAnswers(a => ({ ...a, height_cm: val })); }}
             />
           </View>
         )}
@@ -846,10 +850,12 @@ export default function Form() {
               ))}
             </View>
             <View style={s.measureDisplay}>
-              <Text style={s.measureVal}>
-                {weightUnit === 'kg'
-                  ? Math.round(answers.weight_kg as number)
-                  : Math.round((answers.weight_kg as number) * 2.20462)}
+              <Text style={[s.measureVal, !touchedKeys.has('weight_kg') && { color: colors.muted }]}>
+                {!touchedKeys.has('weight_kg')
+                  ? '—'
+                  : weightUnit === 'kg'
+                    ? Math.round(answers.weight_kg as number)
+                    : Math.round((answers.weight_kg as number) * 2.20462)}
               </Text>
               <Text style={s.measureUnit}>{weightUnit}</Text>
             </View>
@@ -862,7 +868,7 @@ export default function Form() {
               minimumTrackTintColor={diffColor}
               maximumTrackTintColor={colors.border}
               thumbTintColor={diffColor}
-              onValueChange={val => setAnswers(a => ({ ...a, weight_kg: val }))}
+              onValueChange={val => { touch('weight_kg'); setAnswers(a => ({ ...a, weight_kg: val })); }}
             />
           </View>
         )}
@@ -889,7 +895,9 @@ export default function Form() {
         {current.type === 'slider' && (
           <View style={s.sliderWrap}>
             <View style={s.sliderDisplay}>
-              <Text style={s.sliderVal}>{sliderVal}</Text>
+              <Text style={[s.sliderVal, !touchedKeys.has(current.key) && { color: colors.muted }]}>
+                {touchedKeys.has(current.key) ? sliderVal : '—'}
+              </Text>
               <Text style={s.sliderUnit}>{current.unit}</Text>
             </View>
             <Slider
@@ -901,7 +909,7 @@ export default function Form() {
               minimumTrackTintColor={diffColor}
               maximumTrackTintColor={colors.border}
               thumbTintColor={diffColor}
-              onValueChange={val => setAnswers(a => ({ ...a, [current.key]: val }))}
+              onValueChange={val => { touch(current.key); setAnswers(a => ({ ...a, [current.key]: val })); }}
             />
             <View style={s.sliderLabels}>
               <Text style={s.sliderMin}>{current.min}{current.unit}</Text>
@@ -921,20 +929,37 @@ export default function Form() {
             </TouchableOpacity>
           )}
           {(() => {
-            const daySelectReady = current.type === 'daySelect'
-              && ((answers.training_days as unknown as string[])?.length ?? 0) === ((answers.days_per_week as number) ?? 3);
-            const showNext = (current.type === 'slider' || current.type === 'height' || current.type === 'weight' || daySelectReady) && step < total - 1;
-            if (!showNext) return null;
+            const needsNextButton = current.type === 'slider' || current.type === 'height' || current.type === 'weight' || current.type === 'daySelect';
+            if (!needsNextButton) return null;
+
+            // Required validation: user must interact with this step before advancing
+            const isAnswered =
+              current.type === 'daySelect'
+                ? ((answers.training_days as unknown as string[])?.length ?? 0) === ((answers.days_per_week as number) ?? 3)
+                : touchedKeys.has(current.key);
+
+            if (step < total - 1) {
+              return (
+                <TouchableOpacity
+                  style={[s.cta, { backgroundColor: diffColor }, !isAnswered && s.disabled]}
+                  onPress={() => isAnswered && setStep(st => st + 1)}
+                  disabled={!isAnswered}
+                >
+                  <Text style={s.ctaText}>{tr('form_next')}</Text>
+                </TouchableOpacity>
+              );
+            }
             return (
-            <TouchableOpacity
-              style={[s.cta, { backgroundColor: diffColor }]}
-              onPress={() => setStep(st => st + 1)}
-            >
-              <Text style={s.ctaText}>{tr('form_next')}</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.cta, { backgroundColor: diffColor }, (loading || !isAnswered) && s.disabled]}
+                onPress={submit}
+                disabled={loading || !isAnswered}
+              >
+                <Text style={s.ctaText}>{loading ? tr('form_building') : tr('form_build')}</Text>
+              </TouchableOpacity>
             );
           })()}
-          {step === total - 1 && (
+          {step === total - 1 && !(current.type === 'slider' || current.type === 'height' || current.type === 'weight' || current.type === 'daySelect') && (
             <TouchableOpacity style={[s.cta, { backgroundColor: diffColor }, loading && s.disabled]} onPress={submit} disabled={loading}>
               <Text style={s.ctaText}>{loading ? tr('form_building') : tr('form_build')}</Text>
             </TouchableOpacity>
