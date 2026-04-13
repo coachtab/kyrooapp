@@ -65,7 +65,10 @@ async function sendVerificationEmail(email, token) {
         <a href="${link}" style="display:inline-block;background:#E94560;color:#fff;font-weight:700;font-size:16px;padding:14px 32px;border-radius:12px;text-decoration:none;">
           Activate Account
         </a>
-        <p style="color:#666;font-size:12px;margin:24px 0 0;">
+        <p style="color:#E94560;font-size:13px;font-weight:600;margin:20px 0 0;">
+          ⏱ This link expires in 24 hours.
+        </p>
+        <p style="color:#666;font-size:12px;margin:12px 0 0;">
           If the button doesn't work, copy this link:<br/>
           <a href="${link}" style="color:#E94560;word-break:break-all;">${link}</a>
         </p>
@@ -247,11 +250,12 @@ app.post('/api/auth/register', async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
     const displayName = name || email.split('@')[0];
     const verifyToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h from now
 
     await pool.query(
-      `INSERT INTO users (email, password_hash, name, email_verified, verify_token)
-       VALUES ($1,$2,$3,false,$4)`,
-      [email.toLowerCase(), hash, displayName, verifyToken]
+      `INSERT INTO users (email, password_hash, name, email_verified, verify_token, verify_token_expires_at)
+       VALUES ($1,$2,$3,false,$4,$5)`,
+      [email.toLowerCase(), hash, displayName, verifyToken, expiresAt]
     );
 
     await sendVerificationEmail(email.toLowerCase(), verifyToken);
@@ -264,25 +268,61 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // ── Email verification ──────────────────────────────────────────────────────
+const expiredPage = (title, subtitle) => `
+  <html><body style="background:#000;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+    <div style="text-align:center;max-width:420px;padding:24px;">
+      <h1 style="margin-bottom:8px;">${title}</h1>
+      <p style="color:#999;margin-bottom:24px;line-height:1.5;">${subtitle}</p>
+      <a href="${BASE_URL}" style="display:inline-block;background:#E94560;color:#fff;font-weight:700;padding:14px 32px;border-radius:12px;text-decoration:none;font-size:16px;">Open Kyroo</a>
+    </div>
+  </body></html>
+`;
+
 app.get('/api/auth/verify-email', async (req, res) => {
   const { token } = req.query;
   if (!token) return res.status(400).send('Invalid link');
 
   try {
-    const { rows } = await pool.query(
-      'UPDATE users SET email_verified = true, verify_token = NULL WHERE verify_token = $1 AND email_verified = false RETURNING email',
+    // Look up the user + token expiry in one query
+    const lookup = await pool.query(
+      'SELECT id, email, email_verified, verify_token_expires_at FROM users WHERE verify_token = $1',
       [token]
     );
-    if (!rows.length) {
-      return res.send(`
-        <html><body style="background:#000;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
-          <div style="text-align:center;">
-            <h1>Link expired or already used</h1>
-            <p style="color:#999;">Try logging in — your account may already be active.</p>
-          </div>
-        </body></html>
-      `);
+
+    if (!lookup.rows.length) {
+      return res.send(expiredPage(
+        'Link invalid',
+        'This activation link is no longer valid. Try logging in — if your account is already active you can sign in directly.'
+      ));
     }
+
+    const user = lookup.rows[0];
+    if (user.email_verified) {
+      return res.send(expiredPage(
+        'Already activated',
+        'Your account is already active. Just log in.'
+      ));
+    }
+
+    // Check 24h expiry
+    if (user.verify_token_expires_at && new Date(user.verify_token_expires_at) < new Date()) {
+      // Expired — clear the token so the link can't be reused, account stays deactivated
+      await pool.query(
+        'UPDATE users SET verify_token = NULL, verify_token_expires_at = NULL WHERE id = $1',
+        [user.id]
+      );
+      return res.send(expiredPage(
+        'Link expired',
+        'This activation link is more than 24 hours old and no longer works. Go to Kyroo, try to log in with your email, and request a new activation email.'
+      ));
+    }
+
+    // Valid — activate the account
+    await pool.query(
+      'UPDATE users SET email_verified = true, verify_token = NULL, verify_token_expires_at = NULL WHERE id = $1',
+      [user.id]
+    );
+
     res.send(`
       <html><body style="background:#000;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
         <div style="text-align:center;">
@@ -299,22 +339,27 @@ app.get('/api/auth/verify-email', async (req, res) => {
 });
 
 // ── Resend verification email ───────────────────────────────────────────────
+// Always issues a FRESH token + 24h expiry so the new link is valid for a
+// full day regardless of how old the previous one was.
 app.post('/api/auth/resend-verification', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email is required' });
 
   try {
     const { rows } = await pool.query(
-      'SELECT id, verify_token FROM users WHERE email = $1 AND email_verified = false',
+      'SELECT id FROM users WHERE email = $1 AND email_verified = false',
       [email.toLowerCase()]
     );
-    if (!rows.length) return res.json({ ok: true }); // don't leak info
+    if (!rows.length) return res.json({ ok: true }); // don't leak which emails exist
 
-    let token = rows[0].verify_token;
-    if (!token) {
-      token = crypto.randomBytes(32).toString('hex');
-      await pool.query('UPDATE users SET verify_token = $1 WHERE id = $2', [token, rows[0].id]);
-    }
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await pool.query(
+      'UPDATE users SET verify_token = $1, verify_token_expires_at = $2 WHERE id = $3',
+      [token, expiresAt, rows[0].id]
+    );
+
     await sendVerificationEmail(email.toLowerCase(), token);
     res.json({ ok: true });
   } catch (err) {
@@ -990,6 +1035,8 @@ pool.connect()
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS height_cm INT`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS weight_kg DECIMAL(5,1)`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT`);
+    // Email-verification token expiry (24h)
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_token_expires_at TIMESTAMP`);
     console.log('Database connected.');
   })
   .catch(err => console.error('Database connection failed:', err.message));
