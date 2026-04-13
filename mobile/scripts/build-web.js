@@ -22,11 +22,17 @@ const HEAD_INJECT = `
 
   <!-- iOS PWA: hides Safari chrome after "Add to Home Screen" -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Kyroo" />
+  <meta name="format-detection" content="telephone=no" />
 
-  <!-- iOS home screen icon -->
-  <link rel="apple-touch-icon" href="/assets/icon.png" />
+  <!-- iOS home screen icon (180×180 is the recommended size) -->
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+  <!-- iOS splash screen for "Add to Home Screen" cold launch -->
+  <link rel="apple-touch-startup-image" href="/apple-splash.png" />
 
   <!-- Favicon: versioned URL forces browser to discard cached icon -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=3" />
@@ -45,18 +51,36 @@ html = html.replace(
 // Inject PWA tags before </head>
 html = html.replace('</head>', HEAD_INJECT + '\n</head>');
 
-// Inject no-bounce / no-tap-highlight CSS before </head>
+// Inject no-bounce / no-tap-highlight CSS + iOS safe-area handling
 const PWA_CSS = `
   <style>
     html, body {
+      margin: 0;
+      padding: 0;
       overscroll-behavior: none;
       -webkit-tap-highlight-color: transparent;
       -webkit-touch-callout: none;
       touch-action: manipulation;
-      background-color: #0A0A0A;
+      background-color: #000000;
+      /* Paint behind the notch and home indicator */
+      height: 100%;
+    }
+    #root {
+      /* Pure-black background under the status bar area when in
+         standalone (Add to Home Screen) mode */
+      background-color: #000000;
+      min-height: 100vh;
+      min-height: 100dvh;
     }
     * { -webkit-user-select: none; user-select: none; }
     input, textarea { -webkit-user-select: text; user-select: text; }
+
+    /* iOS standalone-specific: remove Safari chrome artefacts */
+    @media all and (display-mode: standalone) {
+      html, body { overflow: hidden; }
+      body { position: fixed; width: 100%; height: 100%; }
+      #root { height: 100%; overflow: auto; -webkit-overflow-scrolling: touch; }
+    }
   </style>`;
 html = html.replace('</head>', PWA_CSS + '\n</head>');
 
