@@ -1,29 +1,27 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/api';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
-import { BackArrow } from './_components';
 
 export default function PrivacyScreen() {
   const router = useRouter();
   const { logout } = useAuth();
-  const { tr } = useT();
+  const { tr, lang } = useT();
 
-  // Change password state
   const [current,  setCurrent]  = useState('');
   const [next,     setNext]     = useState('');
   const [confirm,  setConfirm]  = useState('');
   const [pwSaving, setPwSaving] = useState(false);
 
-  // Delete account state
   const [deleteText, setDeleteText] = useState('');
   const [deleting,   setDeleting]   = useState(false);
 
-  const CONFIRM_WORD = tr('psec_delete_confirm').includes('DELETE') ? 'DELETE' : 'LÖSCHEN';
+  const CONFIRM_WORD = lang === 'de' ? 'LÖSCHEN' : 'DELETE';
 
   async function handleChangePassword() {
     if (next !== confirm) {
@@ -38,9 +36,7 @@ export default function PrivacyScreen() {
     try {
       await api.auth.changePassword(current, next);
       Alert.alert('', tr('psec_pw_success'));
-      setCurrent('');
-      setNext('');
-      setConfirm('');
+      setCurrent(''); setNext(''); setConfirm('');
     } catch (err: any) {
       Alert.alert('Error', err.message);
     } finally {
@@ -48,52 +44,57 @@ export default function PrivacyScreen() {
     }
   }
 
-  function handleDeleteAccount() {
-    Alert.alert(
-      tr('psec_delete'),
-      tr('psec_delete_msg'),
-      [
-        { text: tr('profile_cancel'), style: 'cancel' },
-        {
-          text: tr('psec_delete'),
-          style: 'destructive',
-          onPress: async () => {
-            if (deleteText.toUpperCase() !== CONFIRM_WORD) {
-              Alert.alert('', tr('psec_delete_confirm'));
-              return;
-            }
-            setDeleting(true);
-            try {
-              await api.account.delete();
-              Alert.alert('', tr('psec_delete_done'), [
-                { text: 'OK', onPress: () => { logout(); router.replace('/'); } },
-              ]);
-            } catch (err: any) {
-              Alert.alert('Error', err.message);
-            } finally {
-              setDeleting(false);
-            }
-          },
-        },
-      ]
-    );
+  async function doDelete() {
+    setDeleting(true);
+    try {
+      await api.account.delete();
+      await logout();
+      router.replace('/welcome');
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setDeleting(false);
+    }
   }
 
-  return (
-    <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <TouchableOpacity style={s.back} onPress={() => router.back()}>
-          <BackArrow />
-        </TouchableOpacity>
+  function handleDeleteAccount() {
+    if (deleteText.toUpperCase() !== CONFIRM_WORD) return;
+    if (Platform.OS === 'web') {
+      if (window.confirm(tr('psec_delete_msg'))) doDelete();
+    } else {
+      Alert.alert(tr('psec_delete'), tr('psec_delete_msg'), [
+        { text: tr('profile_cancel'), style: 'cancel' },
+        { text: tr('psec_delete'), style: 'destructive', onPress: doDelete },
+      ]);
+    }
+  }
 
+  const canDelete = deleteText.toUpperCase() === CONFIRM_WORD && !deleting;
+
+  return (
+    <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} hitSlop={10}>
+          <Ionicons name="chevron-back" size={26} color={colors.text} />
+        </TouchableOpacity>
         <Text style={s.title}>
-          {tr('psec_title')} <Text style={s.accent}>{tr('psec_accent')}</Text>
+          {lang === 'de' ? 'Datenschutz' : 'Privacy'}
+        </Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={s.sub}>
+          {lang === 'de'
+            ? 'Verwalte dein Passwort und deine Kontodaten'
+            : 'Manage your password and account data'}
         </Text>
 
-        {/* ── Change password ── */}
+        <Text style={s.sectionLabel}>{tr('psec_pw_section')}</Text>
         <View style={s.card}>
-          <Text style={s.sectionLabel}>{tr('psec_pw_section')}</Text>
-
           <TextInput
             style={s.input}
             value={current}
@@ -113,7 +114,7 @@ export default function PrivacyScreen() {
             autoCapitalize="none"
           />
           <TextInput
-            style={[s.input, { marginBottom: 0 }]}
+            style={s.input}
             value={confirm}
             onChangeText={setConfirm}
             placeholder={tr('psec_pw_confirm')}
@@ -121,25 +122,21 @@ export default function PrivacyScreen() {
             secureTextEntry
             autoCapitalize="none"
           />
-
           <TouchableOpacity
-            style={[s.saveBtn, pwSaving && s.saveBtnDisabled]}
+            style={[s.saveBtn, (pwSaving || !current || !next || !confirm) && s.saveBtnDisabled]}
             onPress={handleChangePassword}
             disabled={pwSaving || !current || !next || !confirm}
             activeOpacity={0.8}
           >
             {pwSaving
-              ? <ActivityIndicator color={colors.bg} size="small" />
-              : <Text style={s.saveBtnText}>{tr('psec_pw_save')}</Text>
-            }
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <Text style={s.saveBtnText}>{tr('psec_pw_save')}</Text>}
           </TouchableOpacity>
         </View>
 
-        {/* ── Delete account ── */}
+        <Text style={s.sectionLabel}>{tr('psec_data_section')}</Text>
         <View style={s.dangerCard}>
-          <Text style={s.sectionLabel}>{tr('psec_data_section')}</Text>
           <Text style={s.deleteMsg}>{tr('psec_delete_msg')}</Text>
-
           <TextInput
             style={[s.input, s.deleteInput]}
             value={deleteText}
@@ -148,17 +145,15 @@ export default function PrivacyScreen() {
             placeholderTextColor={colors.muted}
             autoCapitalize="characters"
           />
-
           <TouchableOpacity
-            style={[s.deleteBtn, (deleting || deleteText.toUpperCase() !== CONFIRM_WORD) && s.deleteBtnDisabled]}
+            style={[s.deleteBtn, !canDelete && s.deleteBtnDisabled]}
             onPress={handleDeleteAccount}
-            disabled={deleting || deleteText.toUpperCase() !== CONFIRM_WORD}
+            disabled={!canDelete}
             activeOpacity={0.8}
           >
             {deleting
               ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={s.deleteBtnText}>{tr('psec_delete')}</Text>
-            }
+              : <Text style={s.deleteBtnText}>{tr('psec_delete')}</Text>}
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -167,62 +162,83 @@ export default function PrivacyScreen() {
 }
 
 const s = StyleSheet.create({
-  safe:    { flex: 1, backgroundColor: colors.bg },
-  scroll:  { padding: 20, paddingBottom: 48 },
-  back:    { marginBottom: 20 },
-  title:   { fontSize: 28, fontWeight: '800', color: colors.text, marginBottom: 28 },
-  accent:  { color: colors.accent },
+  safe: { flex: 1, backgroundColor: '#000' },
+
+  header: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    paddingHorizontal: 20,
+    paddingTop:        24,
+    paddingBottom:     16,
+    gap:               4,
+  },
+  backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  title:   { fontSize: 28, fontWeight: '800', color: colors.text },
+
+  scroll:  { paddingHorizontal: 20, paddingBottom: 40 },
+  sub:     { fontSize: 14, color: colors.muted, marginBottom: 22, lineHeight: 20 },
+
+  sectionLabel: {
+    fontSize:      11,
+    fontWeight:    '800',
+    color:         colors.muted,
+    letterSpacing: 1.5,
+    marginLeft:    4,
+    marginBottom:  8,
+    marginTop:     4,
+  },
 
   card: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 20,
-    gap: 12,
+    backgroundColor: '#0d0d0d',
+    borderRadius:    16,
+    borderWidth:     1.5,
+    borderColor:     colors.border,
+    padding:         16,
+    gap:             12,
+    marginBottom:    22,
   },
   dangerCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.accent + '40',
-    gap: 12,
+    backgroundColor: '#0d0d0d',
+    borderRadius:    16,
+    borderWidth:     1.5,
+    borderColor:     colors.accent + '55',
+    padding:         16,
+    gap:             12,
+    marginBottom:    22,
   },
-  sectionLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, color: colors.muted, marginBottom: 4 },
 
   input: {
-    backgroundColor: colors.card2,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 15,
-    color: colors.text,
-    marginBottom: 0,
+    backgroundColor:   '#141416',
+    borderWidth:       1,
+    borderColor:       colors.border,
+    borderRadius:      12,
+    paddingHorizontal: 14,
+    paddingVertical:   13,
+    fontSize:          15,
+    color:             colors.text,
   },
-  deleteInput: { borderColor: colors.accent + '50' },
+  deleteInput: { borderColor: colors.accent + '60' },
 
   saveBtn: {
-    backgroundColor: colors.cta,
-    borderRadius: 12,
+    backgroundColor: colors.accent,
+    borderRadius:    12,
     paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 4,
+    alignItems:      'center',
+    marginTop:       2,
   },
   saveBtnDisabled: { opacity: 0.4 },
-  saveBtnText: { fontSize: 15, fontWeight: '700', color: colors.bg },
+  saveBtnText:     { fontSize: 15, fontWeight: '800', color: '#fff' },
 
   deleteMsg: { fontSize: 14, color: colors.muted, lineHeight: 21 },
 
   deleteBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: 12,
+    borderWidth:     1.5,
+    borderColor:     colors.accent,
+    borderRadius:    12,
     paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 4,
+    alignItems:      'center',
+    marginTop:       2,
   },
   deleteBtnDisabled: { opacity: 0.4 },
-  deleteBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  deleteBtnText:     { fontSize: 15, fontWeight: '800', color: colors.accent },
 });

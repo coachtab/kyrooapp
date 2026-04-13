@@ -208,6 +208,23 @@ const t = {
     psec_delete_confirm:'Type DELETE to confirm',
     psec_delete_done:  'Account deleted',
 
+    // ── Notifications ──────────────────────────────────────────────────
+    notif_title:          'Notifications',
+    notif_sub:            'Choose what Kyroo can remind you about',
+    notif_section_daily:  'DAILY',
+    notif_daily_reminder: 'Daily training reminder',
+    notif_daily_desc:     'A nudge at your chosen time to complete today\'s session',
+    notif_streak:         'Streak alerts',
+    notif_streak_desc:    'Get notified before your streak is about to break',
+    notif_section_plan:   'PLAN',
+    notif_plan_milestone: 'Plan milestones',
+    notif_plan_milestone_desc: 'Celebrate completed weeks and phases of your program',
+    notif_plan_new:       'New features & plans',
+    notif_plan_new_desc:  'Occasional updates about new training plans and app improvements',
+    notif_section_web:    'WEB LIMITATION',
+    notif_web_notice:     'Push notifications on the web require "Add to Home Screen" on iOS. On desktop, these preferences are saved and will apply when you install the mobile app.',
+    notif_saved:          'Saved',
+
     // ── Logout ──────────────────────────────────────────────────────────
     logout_title:      'Log Out',
     logout_msg:        'You\'ll need to sign in again to access your account.',
@@ -573,6 +590,23 @@ const t = {
     psec_delete_msg:   'Dadurch wird dein Konto und alle Daten dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.',
     psec_delete_confirm:'Tippe LÖSCHEN zur Bestätigung',
     psec_delete_done:  'Konto gelöscht',
+
+    // ── Notifications ──────────────────────────────────────────────────
+    notif_title:          'Benachrichtigungen',
+    notif_sub:            'Wähle, woran Kyroo dich erinnern darf',
+    notif_section_daily:  'TÄGLICH',
+    notif_daily_reminder: 'Tägliche Trainingserinnerung',
+    notif_daily_desc:     'Ein Anstupser zur gewählten Zeit, um deine heutige Einheit zu absolvieren',
+    notif_streak:         'Serien-Warnungen',
+    notif_streak_desc:    'Werde benachrichtigt, bevor deine Serie abreißt',
+    notif_section_plan:   'PLAN',
+    notif_plan_milestone: 'Plan-Meilensteine',
+    notif_plan_milestone_desc: 'Feiere abgeschlossene Wochen und Phasen deines Programms',
+    notif_plan_new:       'Neue Features & Pläne',
+    notif_plan_new_desc:  'Gelegentliche Updates zu neuen Trainingsplänen und App-Verbesserungen',
+    notif_section_web:    'WEB-EINSCHRÄNKUNG',
+    notif_web_notice:     'Push-Benachrichtigungen im Web erfordern „Zum Home-Bildschirm hinzufügen" auf iOS. Auf dem Desktop werden diese Einstellungen gespeichert und gelten, sobald du die mobile App installierst.',
+    notif_saved:          'Gespeichert',
 
     // ── Logout ──────────────────────────────────────────────────────────
     logout_title:      'Abmelden',
