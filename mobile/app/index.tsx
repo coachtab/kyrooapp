@@ -1,68 +1,52 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { colors } from '@/theme';
 
-function WavingHand() {
-  const rot = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const wave = Animated.sequence([
-      Animated.timing(rot, { toValue: 1, duration: 150, easing: Easing.ease, useNativeDriver: true }),
-      Animated.timing(rot, { toValue: -1, duration: 300, easing: Easing.ease, useNativeDriver: true }),
-      Animated.timing(rot, { toValue: 1, duration: 300, easing: Easing.ease, useNativeDriver: true }),
-      Animated.timing(rot, { toValue: -1, duration: 300, easing: Easing.ease, useNativeDriver: true }),
-      Animated.timing(rot, { toValue: 0, duration: 150, easing: Easing.ease, useNativeDriver: true }),
-    ]);
-
-    Animated.loop(wave).start();
-    return () => rot.stopAnimation();
-  }, []);
-
-  const rotate = rot.interpolate({
-    inputRange: [-1, 0, 1],
-    outputRange: ['-20deg', '0deg', '20deg'],
-  });
-
-  return (
-    <Animated.Text style={[s.wave, { transform: [{ rotate }] }]}>
-      👋
-    </Animated.Text>
-  );
-}
+// Placeholder intro video — swap for '/intro.mp4' once the real file is at
+// mobile/public/intro.mp4 (build-web.js copies public/ → dist/).
+const INTRO_VIDEO_SRC = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
 
 export default function Index() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [phase, setPhase] = useState<'loading' | 'splash' | 'greeting'>('loading');
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [muted, setMuted] = useState(true);
 
   useEffect(() => {
     if (isLoading) return;
 
-    // Logged-in users skip splash entirely — go straight to tabs
     if (user) {
       router.replace('/(tabs)');
       return;
     }
 
-    // Not logged in — show splash → greeting flow
     setPhase('splash');
     const t = setTimeout(() => setPhase('greeting'), 1500);
     return () => clearTimeout(t);
   }, [isLoading, user]);
 
-  const handleNext = () => {
-    router.replace('/welcome');
+  useEffect(() => {
+    if (phase === 'greeting' && Platform.OS === 'web' && videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  }, [phase]);
+
+  const handleNext = () => router.replace('/welcome');
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setMuted(videoRef.current.muted);
+    }
   };
 
-  // Loading auth state or redirecting logged-in user
-  if (phase === 'loading') {
-    return <View style={s.root} />;
-  }
+  // Phase 0 — Loading auth state or redirecting logged-in user
+  if (phase === 'loading') return <View style={s.root} />;
 
   // Phase 1 — Splash: centered KYROO logo
   if (phase === 'splash') {
@@ -75,21 +59,53 @@ export default function Index() {
     );
   }
 
-  // Phase 2 — "Hi, it's Kyroo!" + wave + "Next >"
+  // Phase 2 — Greeting video (fullscreen, autoplay-muted, loop)
   return (
     <View style={s.root}>
-      <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
-        <View style={s.center}>
-          <Text style={s.greeting}>
-            Hi, it's <Text style={s.accent}>Kyroo</Text>!
-          </Text>
-          <WavingHand />
+      {Platform.OS === 'web' ? (
+        <video
+          ref={videoRef}
+          src={INTRO_VIDEO_SRC}
+          autoPlay
+          muted
+          loop
+          playsInline
+          style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+            backgroundColor: '#000',
+          }}
+        />
+      ) : (
+        <View style={s.nativePlaceholder}>
+          <Ionicons name="play-circle-outline" size={80} color={colors.muted} />
         </View>
+      )}
 
-        <TouchableOpacity style={s.next} activeOpacity={0.7} onPress={handleNext}>
-          <Text style={s.nextText}>Next</Text>
-          <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+      {/* Subtle bottom gradient for control legibility */}
+      <View style={s.bottomScrim} pointerEvents="none" />
+
+      <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
+        <View style={{ flex: 1 }} />
+
+        <View style={s.bottomRow}>
+          {Platform.OS === 'web' && (
+            <TouchableOpacity style={s.muteBtn} onPress={toggleMute} activeOpacity={0.7}>
+              <Ionicons
+                name={muted ? 'volume-mute' : 'volume-high'}
+                size={20}
+                color="#fff"
+              />
+            </TouchableOpacity>
+          )}
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity style={s.next} activeOpacity={0.75} onPress={handleNext}>
+            <Text style={s.nextText}>Next</Text>
+            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -103,11 +119,6 @@ const s = StyleSheet.create({
     justifyContent:  'center',
   },
 
-  safe: {
-    flex:  1,
-    width: '100%' as any,
-  },
-
   // Splash logo
   logo: {
     fontSize:      28,
@@ -115,42 +126,56 @@ const s = StyleSheet.create({
     color:         '#FFFFFF',
     letterSpacing: 6,
   },
-  logoK: {
-    color: colors.accent,
-  },
+  logoK: { color: colors.accent },
 
-  // Greeting
-  center: {
-    flex:           1,
-    alignItems:     'center',
+  // Greeting video
+  safe: { flex: 1, width: '100%' as any },
+
+  nativePlaceholder: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  greeting: {
-    fontSize:   32,
-    fontWeight: '800',
-    color:      '#FFFFFF',
-    textAlign:  'center',
-  },
-  accent: {
-    color: colors.accent,
-  },
-  wave: {
-    fontSize:  36,
-    marginTop: 16,
+
+  bottomScrim: {
+    position: 'absolute',
+    left: 0, right: 0, bottom: 0,
+    height: 180,
+    backgroundColor: 'rgba(0,0,0,0.55)',
   },
 
-  // Next
+  bottomRow: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    paddingHorizontal: 20,
+    paddingBottom:     16,
+    gap:               8,
+  },
+  muteBtn: {
+    width:           40,
+    height:          40,
+    borderRadius:    20,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderWidth:     1,
+    borderColor:     'rgba(255,255,255,0.22)',
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
   next: {
     flexDirection:     'row',
     alignItems:        'center',
-    alignSelf:         'flex-end',
     gap:               4,
-    paddingHorizontal: 28,
-    paddingBottom:     16,
+    paddingHorizontal: 20,
+    paddingVertical:   11,
+    borderRadius:      24,
+    backgroundColor:   'rgba(0,0,0,0.55)',
+    borderWidth:       1,
+    borderColor:       'rgba(255,255,255,0.28)',
   },
   nextText: {
-    fontSize:   17,
-    fontWeight: '600',
+    fontSize:   15,
+    fontWeight: '700',
     color:      '#FFFFFF',
   },
 });
