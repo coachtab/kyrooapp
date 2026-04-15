@@ -103,11 +103,13 @@ export const api = {
     save: (data: Record<string, unknown>) => req('POST', '/api/questionnaire', data),
   },
   programs: {
-    generate:  (questionnaireId: number)              => req('POST',  '/api/programs/generate', { questionnaireId }),
-    current:   ()                                     => req('GET',   '/api/programs/current'),
-    get:       (id: number)                            => req('GET',  `/api/programs/${id}`),
-    list:      ()                                     => req('GET',   '/api/programs'),
-    setStatus: (id: number, status: ProgramStatus)   => req('PATCH', `/api/programs/${id}/status`, { status }),
+    generate:    (questionnaireId: number)                => req('POST',  '/api/programs/generate', { questionnaireId }),
+    current:     ()                                       => req('GET',   '/api/programs/current'),
+    get:         (id: number)                              => req('GET',  `/api/programs/${id}`),
+    list:        ()                                       => req('GET',   '/api/programs'),
+    setStatus:   (id: number, status: ProgramStatus)     => req('PATCH', `/api/programs/${id}/status`, { status }),
+    setSchedule: (id: number, training_days: string[])    => req('PATCH', `/api/programs/${id}/schedule`, { training_days }),
+    setVacation: (id: number, start: string | null, end: string | null) => req('PATCH', `/api/programs/${id}/vacation`, { start, end }),
   },
   tracking: {
     today:       ()                   => req('GET',  '/api/tracking/today'),

@@ -784,6 +784,52 @@ app.patch('/api/programs/:id/status', auth, async (req, res) => {
   }
 });
 
+// Update the weekly training schedule (which days of the week are training days)
+app.patch('/api/programs/:id/schedule', auth, async (req, res) => {
+  const { training_days } = req.body;
+  if (!Array.isArray(training_days) || training_days.length === 0) {
+    return res.status(400).json({ error: 'training_days must be a non-empty array' });
+  }
+  const VALID = new Set(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']);
+  const cleaned = [...new Set(training_days.filter(d => VALID.has(d)))];
+  if (cleaned.length === 0) return res.status(400).json({ error: 'No valid days supplied' });
+  try {
+    const r = await pool.query(
+      'UPDATE programs SET training_days = $1 WHERE id = $2 AND user_id = $3 RETURNING id',
+      [cleaned, req.params.id, req.user.id]
+    );
+    if (!r.rows.length) return res.status(404).json({ error: 'Program not found' });
+    res.json({ ok: true, training_days: cleaned });
+  } catch (err) {
+    console.error('[set schedule]', err.message);
+    res.status(500).json({ error: 'Failed to update schedule' });
+  }
+});
+
+// Set or clear a vacation window. Pass { start, end } to schedule one,
+// or { start: null, end: null } to clear.
+app.patch('/api/programs/:id/vacation', auth, async (req, res) => {
+  const { start, end } = req.body;
+  const clear = !start && !end;
+  if (!clear) {
+    const s = new Date(start), e = new Date(end);
+    if (isNaN(+s) || isNaN(+e) || e < s) {
+      return res.status(400).json({ error: 'Invalid start/end dates' });
+    }
+  }
+  try {
+    const r = await pool.query(
+      'UPDATE programs SET vacation_start = $1, vacation_end = $2 WHERE id = $3 AND user_id = $4 RETURNING id, vacation_start, vacation_end',
+      [clear ? null : start, clear ? null : end, req.params.id, req.user.id]
+    );
+    if (!r.rows.length) return res.status(404).json({ error: 'Program not found' });
+    res.json({ ok: true, ...r.rows[0] });
+  } catch (err) {
+    console.error('[set vacation]', err.message);
+    res.status(500).json({ error: 'Failed to update vacation' });
+  }
+});
+
 // ── Routes: Current active program (full detail) ──────────────────────────────
 
 app.get('/api/programs/current', auth, async (req, res) => {

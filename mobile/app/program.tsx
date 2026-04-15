@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Alert, Animated, PanResponder, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Alert, Animated, PanResponder, RefreshControl, Modal } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,7 +33,14 @@ interface Program  {
   ai_generated?: boolean;
   nutrition?: Nutrition | null;
   days: Day[];
+  training_days?:  string[] | null;
+  vacation_start?: string | null;
+  vacation_end?:   string | null;
 }
+
+const DAY_KEYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+const DAY_SHORT_EN: Record<string, string> = { Monday:'Mon', Tuesday:'Tue', Wednesday:'Wed', Thursday:'Thu', Friday:'Fri', Saturday:'Sat', Sunday:'Sun' };
+const DAY_SHORT_DE: Record<string, string> = { Monday:'Mo', Tuesday:'Di', Wednesday:'Mi', Thursday:'Do', Friday:'Fr', Saturday:'Sa', Sunday:'So' };
 
 const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
   fire: 'flame-outline',
@@ -347,6 +354,16 @@ export default function ProgramScreen() {
           )}
         </View>
 
+        {/* Schedule + vacation — only while the program is active or paused */}
+        {!isCompleted && (
+          <ScheduleCard
+            program={program}
+            diffColor={diffColor}
+            lang={lang}
+            onUpdated={fetchProgram}
+          />
+        )}
+
         {/* Nutrition — only shown when Claude returned a nutrition block (body-comp plans) */}
         {program.nutrition && (
           <View style={s.nutritionSection}>
@@ -451,6 +468,432 @@ export default function ProgramScreen() {
     </SafeAreaView>
   );
 }
+
+// ── Schedule + vacation card ──────────────────────────────────────────────
+const APP_FONT_STACK =
+  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+const DATE_INPUT_STYLE: any = {
+  boxSizing:       'border-box',
+  display:         'block',
+  width:           '100%',
+  maxWidth:        '100%',
+  minWidth:        0,
+  padding:         '14px',
+  fontSize:        '16px',
+  fontWeight:      500,
+  lineHeight:      '1.2',
+  color:           '#F5F5F5',
+  backgroundColor: '#141416',
+  border:          '1.5px solid #2A2A2E',
+  borderRadius:    '12px',
+  marginBottom:    '14px',
+  fontFamily:      APP_FONT_STACK,
+  colorScheme:     'dark',
+  outline:         'none',
+  WebkitAppearance:'none',
+  appearance:      'none',
+};
+
+interface ScheduleCardProps {
+  program:   Program;
+  diffColor: string;
+  lang:      'en' | 'de';
+  onUpdated: () => void;
+}
+function ScheduleCard({ program, diffColor, lang, onUpdated }: ScheduleCardProps) {
+  const [busy, setBusy] = useState(false);
+  const [localDays, setLocalDays] = useState<string[]>(program.training_days ?? []);
+  const [modalOpen, setModalOpen] = useState(false);
+  const today = new Date().toISOString().slice(0, 10);
+  const defaultEnd = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+  const [breakStart, setBreakStart] = useState(today);
+  const [breakEnd,   setBreakEnd]   = useState(defaultEnd);
+  const shortMap = lang === 'de' ? DAY_SHORT_DE : DAY_SHORT_EN;
+
+  useEffect(() => { setLocalDays(program.training_days ?? []); }, [program.training_days]);
+
+  const toggleDay = async (day: string) => {
+    const next = localDays.includes(day)
+      ? localDays.filter(d => d !== day)
+      : [...localDays, day];
+    if (next.length === 0) {
+      Alert.alert('', lang === 'de' ? 'Du brauchst mindestens einen Tag.' : 'You need at least one day.');
+      return;
+    }
+    setLocalDays(next);
+    setBusy(true);
+    try {
+      await api.programs.setSchedule(program.id, next);
+      onUpdated();
+    } catch (err: any) {
+      Alert.alert('', err.message);
+      setLocalDays(program.training_days ?? []);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onVacation = !!(program.vacation_start && program.vacation_end);
+  const vacationActive = onVacation &&
+    program.vacation_start! <= today && today <= program.vacation_end!;
+
+  // Short, clean range: "Apr 15 – 22" when same month, "Apr 28 – May 5" otherwise.
+  const formatRange = (startIso: string, endIso: string): string => {
+    const locale = lang === 'de' ? 'de-DE' : 'en-US';
+    const s = new Date(startIso + 'T00:00:00');
+    const e = new Date(endIso + 'T00:00:00');
+    const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
+    const monthFmt = new Intl.DateTimeFormat(locale, { month: 'short' });
+    if (sameMonth) {
+      return lang === 'de'
+        ? `${s.getDate()}.–${e.getDate()}. ${monthFmt.format(s)}`
+        : `${monthFmt.format(s)} ${s.getDate()} – ${e.getDate()}`;
+    }
+    const startShort = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(s);
+    const endShort   = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(e);
+    return `${startShort} – ${endShort}`;
+  };
+
+  const openBreakModal = () => {
+    // Reset defaults every time so it always starts from today
+    const t = new Date().toISOString().slice(0, 10);
+    setBreakStart(t);
+    setBreakEnd(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
+    setModalOpen(true);
+  };
+
+  const saveBreak = async () => {
+    if (!breakStart || !breakEnd || breakEnd < breakStart) {
+      Alert.alert('', lang === 'de'
+        ? 'Das End-Datum muss nach dem Start-Datum liegen.'
+        : 'The end date must be after the start date.');
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.programs.setVacation(program.id, breakStart, breakEnd);
+      setModalOpen(false);
+      onUpdated();
+    } catch (err: any) {
+      Alert.alert('', err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const clearVacation = async () => {
+    setBusy(true);
+    try {
+      await api.programs.setVacation(program.id, null, null);
+      onUpdated();
+    } catch (err: any) {
+      Alert.alert('', err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <View style={[sched.card, { borderColor: diffColor + '40' }]}>
+      <Text style={sched.sectionLabel}>{lang === 'de' ? 'PLAN & PAUSEN' : 'SCHEDULE & BREAKS'}</Text>
+
+      <Text style={sched.hint}>
+        {lang === 'de' ? 'Tippe, um Trainingstage zu ändern' : 'Tap to change your training days'}
+      </Text>
+
+      <View style={sched.daysRow}>
+        {DAY_KEYS.map(day => {
+          const active = localDays.includes(day);
+          return (
+            <TouchableOpacity
+              key={day}
+              style={[
+                sched.dayChip,
+                active && { backgroundColor: diffColor, borderColor: diffColor },
+                busy && { opacity: 0.6 },
+              ]}
+              onPress={() => !busy && toggleDay(day)}
+              activeOpacity={0.75}
+            >
+              <Text style={[sched.dayChipText, active && { color: '#fff' }]}>
+                {shortMap[day]}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={sched.divider} />
+
+      {onVacation ? (
+        <View style={sched.vacationActive}>
+          <Ionicons name="pause-circle-outline" size={20} color={diffColor} />
+          <View style={{ flex: 1 }}>
+            <Text style={[sched.vacationTitle, { color: diffColor }]}>
+              {vacationActive
+                ? (lang === 'de' ? 'Pause läuft' : 'Break in progress')
+                : (lang === 'de' ? 'Pause geplant' : 'Break scheduled')}
+            </Text>
+            <Text style={sched.vacationDates}>
+              {formatRange(program.vacation_start!, program.vacation_end!)}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={clearVacation} disabled={busy}>
+            <Text style={[sched.vacationClear, { color: diffColor }]}>
+              {lang === 'de' ? 'Löschen' : 'Clear'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={[sched.vacationBtn, { borderColor: diffColor }]}
+          onPress={openBreakModal}
+          disabled={busy}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="pause-circle-outline" size={20} color={diffColor} />
+          <Text style={[sched.vacationBtnText, { color: diffColor }]}>
+            {lang === 'de' ? 'Pause einplanen' : 'Schedule a break'}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Break modal — modern card with native date inputs (web) */}
+      <Modal visible={modalOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setModalOpen(false)}>
+        <View style={sched.modalBackdrop}>
+          <View style={[sched.modalCard, { borderColor: diffColor + '55' }]}>
+            <View style={sched.modalHeader}>
+              <Ionicons name="pause-circle-outline" size={22} color={diffColor} />
+              <Text style={sched.modalTitle}>
+                {lang === 'de' ? 'Pause einplanen' : 'Schedule a break'}
+              </Text>
+              <TouchableOpacity onPress={() => setModalOpen(false)} hitSlop={10}>
+                <Ionicons name="close" size={20} color={colors.muted} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={sched.modalSub}>
+              {lang === 'de'
+                ? 'Urlaub, Krankheit, Reise — wähle den Zeitraum.'
+                : 'Vacation, sickness, travel — pick the range.'}
+            </Text>
+
+            <Text style={sched.modalLabel}>
+              {lang === 'de' ? 'VON' : 'FROM'}
+            </Text>
+            {Platform.OS === 'web' ? (
+              <View style={sched.inputWrap}>
+                {/* @ts-expect-error — HTML input type=date is web-only */}
+                <input
+                  type="date"
+                  value={breakStart}
+                  min={today}
+                  aria-label={lang === 'de' ? 'Start-Datum' : 'Start date'}
+                  title={lang === 'de' ? 'Start-Datum' : 'Start date'}
+                  placeholder={lang === 'de' ? 'Start-Datum' : 'Start date'}
+                  onChange={(e: any) => setBreakStart(e.target.value)}
+                  style={DATE_INPUT_STYLE}
+                />
+              </View>
+            ) : (
+              <Text style={sched.nativeNotice}>{breakStart}</Text>
+            )}
+
+            <Text style={sched.modalLabel}>
+              {lang === 'de' ? 'BIS' : 'TO'}
+            </Text>
+            {Platform.OS === 'web' ? (
+              <View style={sched.inputWrap}>
+                {/* @ts-expect-error — HTML input type=date is web-only */}
+                <input
+                  type="date"
+                  value={breakEnd}
+                  min={breakStart}
+                  aria-label={lang === 'de' ? 'End-Datum' : 'End date'}
+                  title={lang === 'de' ? 'End-Datum' : 'End date'}
+                  placeholder={lang === 'de' ? 'End-Datum' : 'End date'}
+                  onChange={(e: any) => setBreakEnd(e.target.value)}
+                  style={DATE_INPUT_STYLE}
+                />
+              </View>
+            ) : (
+              <Text style={sched.nativeNotice}>{breakEnd}</Text>
+            )}
+
+            <View style={sched.modalActions}>
+              <TouchableOpacity
+                style={[sched.modalBtn, sched.modalBtnSecondary]}
+                onPress={() => setModalOpen(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={sched.modalBtnSecondaryText}>
+                  {lang === 'de' ? 'Abbrechen' : 'Cancel'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[sched.modalBtn, { backgroundColor: diffColor }, busy && { opacity: 0.6 }]}
+                onPress={saveBreak}
+                disabled={busy}
+                activeOpacity={0.85}
+              >
+                <Text style={sched.modalBtnPrimaryText}>
+                  {busy
+                    ? (lang === 'de' ? 'Speichern…' : 'Saving…')
+                    : (lang === 'de' ? 'Bestätigen' : 'Confirm')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+const sched = StyleSheet.create({
+  card: {
+    backgroundColor: '#0d0d0d',
+    borderRadius:    16,
+    borderWidth:     1.5,
+    padding:         16,
+    marginBottom:    14,
+  },
+  sectionLabel: {
+    fontSize:      11,
+    fontWeight:    '800',
+    letterSpacing: 1.5,
+    color:         colors.muted,
+    marginBottom:  6,
+  },
+  hint: { fontSize: 12, color: colors.muted, marginBottom: 12 },
+
+  daysRow: {
+    flexDirection:  'row',
+    justifyContent: 'space-between',
+    gap:            6,
+    marginBottom:   14,
+  },
+  dayChip: {
+    flex:            1,
+    paddingVertical: 10,
+    borderRadius:    10,
+    borderWidth:     1.5,
+    borderColor:     colors.border,
+    backgroundColor: '#141416',
+    alignItems:      'center',
+  },
+  dayChipText: { fontSize: 12, fontWeight: '800', color: colors.muted },
+
+  divider: { height: 1, backgroundColor: colors.border, marginBottom: 14 },
+
+  vacationBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'center',
+    gap:               8,
+    paddingVertical:   12,
+    borderRadius:      12,
+    borderWidth:       1.5,
+  },
+  vacationBtnText: { fontSize: 14, fontWeight: '800' },
+
+  vacationActive: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           12,
+  },
+  vacationTitle: { fontSize: 13, fontWeight: '800' },
+  vacationDates: { fontSize: 12, color: colors.muted, marginTop: 2 },
+  vacationClear: { fontSize: 12, fontWeight: '800' },
+
+  // ── Break modal ────────────────────────────────────────────────────────
+  modalBackdrop: {
+    flex:            1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    alignItems:      'center',
+    justifyContent:  'center',
+    padding:         24,
+  },
+  modalCard: {
+    width:           '100%' as any,
+    maxWidth:        400,
+    minWidth:        0,
+    backgroundColor: '#0d0d0d',
+    borderRadius:    20,
+    borderWidth:     1.5,
+    padding:         22,
+    overflow:        'hidden',
+  },
+  inputWrap: {
+    width:     '100%' as any,
+    minWidth:  0,
+    overflow:  'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           10,
+    marginBottom:  6,
+  },
+  modalTitle: {
+    flex:       1,
+    fontSize:   16,
+    fontWeight: '800',
+    color:      colors.text,
+  },
+  modalSub: {
+    fontSize:     13,
+    color:        colors.muted,
+    lineHeight:   18,
+    marginBottom: 20,
+  },
+  modalLabel: {
+    fontSize:      10,
+    fontWeight:    '800',
+    letterSpacing: 1.3,
+    color:         colors.muted,
+    marginBottom:  6,
+  },
+  nativeNotice: {
+    fontSize:          15,
+    color:             colors.text,
+    backgroundColor:   '#141416',
+    borderWidth:       1,
+    borderColor:       colors.border,
+    borderRadius:      12,
+    paddingHorizontal: 14,
+    paddingVertical:   12,
+    marginBottom:      14,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap:           10,
+    marginTop:     10,
+  },
+  modalBtn: {
+    flex:            1,
+    paddingVertical: 14,
+    borderRadius:    12,
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+  modalBtnSecondary: {
+    backgroundColor: '#141416',
+    borderWidth:     1.5,
+    borderColor:     colors.border,
+  },
+  modalBtnSecondaryText: {
+    fontSize:   14,
+    fontWeight: '800',
+    color:      colors.muted,
+  },
+  modalBtnPrimaryText: {
+    fontSize:   14,
+    fontWeight: '800',
+    color:      '#fff',
+  },
+});
 
 const s = StyleSheet.create({
   safe:          { flex: 1, backgroundColor: '#000' },
