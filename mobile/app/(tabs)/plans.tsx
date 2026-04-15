@@ -1,34 +1,12 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Animated, PanResponder, Easing, RefreshControl } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path, Line } from 'react-native-svg';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, clearApiCache } from '@/api';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
-
-// White glove pointing hand — classic cartoon style
-function GloveHand({ size = 42 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 100 100">
-      {/* Cuff */}
-      <Path d="M28 78 L28 92 L72 92 L72 78 Z" fill="#FFFFFF" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-      {/* Palm */}
-      <Path d="M26 52 Q26 80 50 80 Q74 80 74 52 L74 40 Q74 32 66 32 Q58 32 58 40 L58 30 Q58 20 50 20 Q42 20 42 30 L42 38 Q42 30 34 30 Q26 30 26 40 Z"
-        fill="#FFFFFF" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-      {/* Extended index finger */}
-      <Path d="M42 38 L42 10 Q42 4 50 4 Q58 4 58 10 L58 36"
-        fill="#FFFFFF" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-      {/* Glove lines (stitching on back of hand) */}
-      <Line x1="36" y1="60" x2="42" y2="70" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-      <Line x1="48" y1="58" x2="52" y2="72" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-      <Line x1="62" y1="60" x2="58" y2="72" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-    </Svg>
-  );
-}
 
 interface Program {
   id: number;
@@ -73,9 +51,9 @@ const STATUS_LABEL: Record<string, { en: string; de: string }> = {
   completed: { en: 'COMPLETED', de: 'ABGESCHLOSSEN'    },
 };
 
-// ── Swipeable program row ──────────────────────────────────────────────────
-function SwipeableProgramCard({
-  prog, diffColor, statusLabel, iconName, lang, onTap, onStatusChange, showDemo,
+// ── Program row — tap the card to open, tap the button to start/pause ─────
+function ProgramCard({
+  prog, diffColor, statusLabel, iconName, lang, onTap, onStatusChange,
 }: {
   prog: Program;
   diffColor: string;
@@ -84,160 +62,83 @@ function SwipeableProgramCard({
   lang: 'en' | 'de';
   onTap: () => void;
   onStatusChange: (status: 'active' | 'paused') => void;
-  showDemo: boolean;
 }) {
-  const dragX = useRef(new Animated.Value(0)).current;
-  const demoX = useRef(new Animated.Value(0)).current;
-  const demoOpacity = useRef(new Animated.Value(0)).current;
-  const SWIPE_THRESHOLD = 70;
-
   const isCompleted = prog.status === 'completed';
-  // Any non-completed plan can be started (active plans stay active — no-op).
-  // Only currently-active plans can be paused.
-  const canStart = !isCompleted;
-  const canPause = prog.status === 'active';
-
-  // Demo animation — glove hand swipes left-right to teach the gesture
-  useEffect(() => {
-    if (!showDemo) return;
-    const direction = canStart ? -1 : canPause ? 1 : 0;
-    if (direction === 0) return;
-
-    Animated.sequence([
-      Animated.delay(400),
-      Animated.timing(demoOpacity, { toValue: 1, duration: 300, useNativeDriver: false }),
-      Animated.timing(demoX, { toValue: direction * 100, duration: 900, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
-      Animated.delay(300),
-      Animated.timing(demoOpacity, { toValue: 0, duration: 400, useNativeDriver: false }),
-    ]).start();
-  }, [showDemo]);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
-      onPanResponderGrant: () => { dragX.setValue(0); },
-      onPanResponderMove: (_, g) => {
-        if (g.dx < 0 && canStart) dragX.setValue(Math.max(g.dx, -140));
-        else if (g.dx > 0 && canPause) dragX.setValue(Math.min(g.dx, 140));
-      },
-      onPanResponderRelease: (_, g) => {
-        if (g.dx < -SWIPE_THRESHOLD && canStart) {
-          Animated.timing(dragX, { toValue: -140, duration: 150, useNativeDriver: false }).start(() => {
-            dragX.setValue(0);
-            onStatusChange('active');
-          });
-        } else if (g.dx > SWIPE_THRESHOLD && canPause) {
-          Animated.timing(dragX, { toValue: 140, duration: 150, useNativeDriver: false }).start(() => {
-            dragX.setValue(0);
-            onStatusChange('paused');
-          });
-        } else {
-          Animated.spring(dragX, { toValue: 0, useNativeDriver: false, friction: 6 }).start();
-        }
-      },
-    })
-  ).current;
-
-  const startOpacity = dragX.interpolate({ inputRange: [-140, -15, 0], outputRange: [1, 0.25, 0], extrapolate: 'clamp' });
-  const pauseOpacity = dragX.interpolate({ inputRange: [0, 15, 140],   outputRange: [0, 0.25, 1], extrapolate: 'clamp' });
+  const canPause    = prog.status === 'active';
 
   return (
     <View style={cs.wrap}>
-      {/* Background hints */}
-      {canStart && (
-        <Animated.View style={[cs.hint, cs.hintRight, { backgroundColor: diffColor, opacity: startOpacity }]}>
-          <Ionicons name="play" size={20} color="#fff" />
-          <Text style={cs.hintText}>{lang === 'de' ? 'Starten' : 'Start'}</Text>
-        </Animated.View>
-      )}
-      {canPause && (
-        <Animated.View style={[cs.hint, cs.hintLeft, { backgroundColor: diffColor + '60', opacity: pauseOpacity }]}>
-          <Ionicons name="pause" size={20} color={diffColor} />
-          <Text style={[cs.hintText, { color: diffColor }]}>{lang === 'de' ? 'Pause' : 'Pause'}</Text>
-        </Animated.View>
-      )}
-
-      {/* Card */}
-      <Animated.View
-        style={{ transform: [{ translateX: dragX }] }}
-        {...panResponder.panHandlers}
+      <TouchableOpacity
+        style={[
+          cs.card,
+          { borderColor: isCompleted ? '#4CAF50' + '80' : diffColor },
+          isCompleted && { backgroundColor: '#0a1a0e' },
+        ]}
+        activeOpacity={0.85}
+        onPress={onTap}
       >
-        <TouchableOpacity
-          style={[
-            cs.card,
-            { borderColor: isCompleted ? '#4CAF50' + '80' : diffColor },
-            isCompleted && { backgroundColor: '#0a1a0e' },
-          ]}
-          activeOpacity={0.85}
-          onPress={onTap}
-        >
-          {/* Completed ribbon — corner badge */}
-          {isCompleted && (
-            <View style={cs.completedBadge}>
-              <Ionicons name="trophy" size={12} color="#fff" />
-              <Text style={cs.completedBadgeText}>{lang === 'de' ? 'GESCHAFFT' : 'DONE'}</Text>
-            </View>
-          )}
-
-          <View style={cs.head}>
-            <Ionicons name={isCompleted ? 'checkmark-circle' : iconName} size={22} color={isCompleted ? '#4CAF50' : diffColor} />
-            <Text style={[cs.name, isCompleted && cs.nameCompleted]} numberOfLines={1}>{prog.name}</Text>
-            {prog.ai_generated && !isCompleted && <Ionicons name="sparkles" size={14} color={diffColor} />}
+        {isCompleted && (
+          <View style={cs.completedBadge}>
+            <Ionicons name="trophy" size={12} color="#fff" />
+            <Text style={cs.completedBadgeText}>{lang === 'de' ? 'GESCHAFFT' : 'DONE'}</Text>
           </View>
-          <View style={cs.meta}>
-            <Text style={[cs.status, { color: isCompleted ? '#4CAF50' : diffColor }]}>{statusLabel}</Text>
-            <Text style={cs.dot}>·</Text>
-            <Text style={cs.weeks}>
-              {isCompleted
-                ? (lang === 'de' ? `${prog.total_weeks} Wochen abgeschlossen` : `${prog.total_weeks} weeks finished`)
-                : lang === 'de'
-                  ? `Woche ${prog.current_week}/${prog.total_weeks}`
-                  : `Week ${prog.current_week}/${prog.total_weeks}`}
-            </Text>
-          </View>
-          <View style={cs.track}>
-            <View style={[
-              cs.fill,
-              {
-                width: `${isCompleted ? 100 : Math.min(100, (prog.current_week / prog.total_weeks) * 100)}%` as any,
-                backgroundColor: isCompleted ? '#4CAF50' : diffColor,
-              },
-            ]} />
-          </View>
+        )}
 
-          {/* Primary action — visible button so users don't have to discover the swipe gesture */}
-          {!isCompleted && (
-            <View style={cs.actionRow}>
-              <TouchableOpacity
-                style={[cs.actionBtn, { backgroundColor: diffColor }]}
-                onPress={(e) => { e.stopPropagation?.(); onStatusChange(canPause ? 'paused' : 'active'); }}
-                activeOpacity={0.85}
-              >
-                <Ionicons name={canPause ? 'pause' : 'play'} size={14} color="#fff" />
-                <Text style={cs.actionBtnText}>
-                  {canPause
-                    ? (lang === 'de' ? 'Pausieren' : 'Pause')
-                    : prog.status === 'paused'
-                      ? (lang === 'de' ? 'Fortsetzen' : 'Resume')
-                      : (lang === 'de' ? 'Starten' : 'Start')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={cs.openBtn}
-                onPress={(e) => { e.stopPropagation?.(); onTap(); }}
-                activeOpacity={0.75}
-              >
-                <Text style={[cs.openBtnText, { color: diffColor }]}>
-                  {lang === 'de' ? 'Ansehen' : 'Open'}
-                </Text>
-                <Ionicons name="chevron-forward" size={14} color={diffColor} />
-              </TouchableOpacity>
-            </View>
-          )}
-        </TouchableOpacity>
-      </Animated.View>
+        <View style={cs.head}>
+          <Ionicons name={isCompleted ? 'checkmark-circle' : iconName} size={22} color={isCompleted ? '#4CAF50' : diffColor} />
+          <Text style={[cs.name, isCompleted && cs.nameCompleted]} numberOfLines={1}>{prog.name}</Text>
+          {prog.ai_generated && !isCompleted && <Ionicons name="sparkles" size={14} color={diffColor} />}
+        </View>
+        <View style={cs.meta}>
+          <Text style={[cs.status, { color: isCompleted ? '#4CAF50' : diffColor }]}>{statusLabel}</Text>
+          <Text style={cs.dot}>·</Text>
+          <Text style={cs.weeks}>
+            {isCompleted
+              ? (lang === 'de' ? `${prog.total_weeks} Wochen abgeschlossen` : `${prog.total_weeks} weeks finished`)
+              : lang === 'de'
+                ? `Woche ${prog.current_week}/${prog.total_weeks}`
+                : `Week ${prog.current_week}/${prog.total_weeks}`}
+          </Text>
+        </View>
+        <View style={cs.track}>
+          <View style={[
+            cs.fill,
+            {
+              width: `${isCompleted ? 100 : Math.min(100, (prog.current_week / prog.total_weeks) * 100)}%` as any,
+              backgroundColor: isCompleted ? '#4CAF50' : diffColor,
+            },
+          ]} />
+        </View>
 
+        {!isCompleted && (
+          <View style={cs.actionRow}>
+            <TouchableOpacity
+              style={[cs.actionBtn, { backgroundColor: diffColor }]}
+              onPress={(e) => { e.stopPropagation?.(); onStatusChange(canPause ? 'paused' : 'active'); }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name={canPause ? 'pause' : 'play'} size={14} color="#fff" />
+              <Text style={cs.actionBtnText}>
+                {canPause
+                  ? (lang === 'de' ? 'Pausieren' : 'Pause')
+                  : prog.status === 'paused'
+                    ? (lang === 'de' ? 'Fortsetzen' : 'Resume')
+                    : (lang === 'de' ? 'Starten' : 'Start')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={cs.openBtn}
+              onPress={(e) => { e.stopPropagation?.(); onTap(); }}
+              activeOpacity={0.75}
+            >
+              <Text style={[cs.openBtnText, { color: diffColor }]}>
+                {lang === 'de' ? 'Ansehen' : 'Open'}
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color={diffColor} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </TouchableOpacity>
     </View>
   );
 }
@@ -300,8 +201,6 @@ const cs = StyleSheet.create({
   weeks:      { fontSize: 12, color: colors.muted },
   track:      { height: 4, backgroundColor: '#1a1a1a', borderRadius: 2, overflow: 'hidden' },
   fill:       { height: 4, borderRadius: 2 },
-
-  demoHand:   { position: 'absolute', top: '50%', left: '50%', marginLeft: -23, marginTop: -23 },
 });
 
 export default function PlansTab() {
@@ -310,7 +209,6 @@ export default function PlansTab() {
   const [programs,   setPrograms]   = useState<Program[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showDemo,   setShowDemo]   = useState(false);
 
   const fetchPrograms = useCallback(async () => {
     try {
@@ -333,19 +231,6 @@ export default function PlansTab() {
   }, [fetchPrograms]);
 
   useFocusEffect(load);
-
-  // Show swipe demo once — persisted in AsyncStorage
-  useEffect(() => {
-    if (loading || programs.length === 0) return;
-    (async () => {
-      const seen = await AsyncStorage.getItem('plans_swipe_demo_seen');
-      if (!seen) {
-        setShowDemo(true);
-        await AsyncStorage.setItem('plans_swipe_demo_seen', '1');
-        setTimeout(() => setShowDemo(false), 3000);
-      }
-    })();
-  }, [loading, programs.length]);
 
   const handleStatusChange = async (progId: number, next: 'active' | 'paused') => {
     try {
@@ -371,8 +256,8 @@ export default function PlansTab() {
         </Text>
         <Text style={s.sub}>
           {lang === 'de'
-            ? 'Wische nach links zum Starten, nach rechts zum Pausieren'
-            : 'Swipe left to start, swipe right to pause'}
+            ? 'Tippe auf einen Plan, um ihn zu öffnen'
+            : 'Tap a plan to open it'}
         </Text>
       </View>
 
@@ -399,19 +284,18 @@ export default function PlansTab() {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />}
         >
-          {programs.map((prog, index) => {
+          {programs.map(prog => {
             const iconName = ICON_MAP[prog.icon || ''] || 'barbell-outline';
             const diffColor = DIFFICULTY_COLOR[(prog.difficulty || '').toLowerCase()] || colors.accent;
             const statusLabel = STATUS_LABEL[prog.status]?.[lang] || prog.status.toUpperCase();
             return (
-              <SwipeableProgramCard
+              <ProgramCard
                 key={prog.id}
                 prog={prog}
                 diffColor={diffColor}
                 statusLabel={statusLabel}
                 iconName={iconName}
                 lang={lang}
-                showDemo={showDemo && index === 0}
                 onTap={() => router.push({ pathname: '/program', params: { id: prog.id } } as any)}
                 onStatusChange={next => handleStatusChange(prog.id, next)}
               />

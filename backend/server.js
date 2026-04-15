@@ -535,6 +535,16 @@ ${Object.entries(extras)
 
   const systemPrompt = `You are a world-class personal trainer and exercise physiologist. You create safe, effective, highly personalised training programs.
 
+LANGUAGE RULE — very important:
+Every user-facing string you output (name, overview, focus, exercise names, notes, meal names) must be simple enough for a 12-year-old to understand without looking anything up. Prefer plain words over fitness jargon. DO:
+- say "push day" not "anterior chain day"
+- say "slow run" not "zone-2 aerobic"
+- say "light week before the race" not "taper"
+- say "big lifts" not "compound movements"
+- say "short all-out finish" not "metcon" / "AMRAP" / "EMOM"
+- say "stronger bones" not "bone density"
+Keep terms the user picked themselves (HIIT, CrossFit, Hyrox, Marathon, Calisthenics, Tabata) because they opted into that plan. Everything else: plain words, short sentences.
+
 Output MUST be valid JSON matching this exact schema:
 {
   "name": "Short, precise program name — MAX 24 characters, 2-4 words, no emojis, no colons, no subtitles. Examples: 'Lean Shred 12', 'Hypertrophy 16', 'First 5K', 'Push-Pull Build'. Never verbose like 'Your Personalised Full-Body Hypertrophy Transformation Plan'.",
