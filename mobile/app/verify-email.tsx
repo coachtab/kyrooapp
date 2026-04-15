@@ -5,10 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/api';
 import { colors } from '@/theme';
+import { useT } from '@/i18n';
 
 export default function VerifyEmail() {
   const router = useRouter();
   const { email } = useLocalSearchParams<{ email: string }>();
+  const { lang } = useT();
   const [resent, setResent] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -35,6 +37,15 @@ export default function VerifyEmail() {
           <Text style={s.hint}>
             Click the link in the email to activate{'\n'}your account, then come back and log in.
           </Text>
+
+          <View style={s.spamCard}>
+            <Ionicons name="alert-circle-outline" size={18} color={colors.accent} />
+            <Text style={s.spamText}>
+              {lang === 'de'
+                ? 'Keine Mail im Posteingang? Schau bitte auch in deinem Spam- oder Junk-Ordner nach — Aktivierungs-Mails landen manchmal dort.'
+                : "Can't find it? Please also check your Spam or Junk folder — activation emails sometimes land there."}
+            </Text>
+          </View>
 
           {resent ? (
             <Text style={s.resentText}>Email sent again!</Text>
@@ -88,7 +99,26 @@ const s = StyleSheet.create({
     color:      '#666',
     textAlign:  'center',
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: 16,
+  },
+  spamCard: {
+    flexDirection:   'row',
+    alignItems:      'flex-start',
+    gap:             10,
+    backgroundColor: 'rgba(233, 69, 96, 0.08)',
+    borderWidth:     1,
+    borderColor:     'rgba(233, 69, 96, 0.35)',
+    borderRadius:    12,
+    paddingHorizontal: 14,
+    paddingVertical:   12,
+    marginBottom:      22,
+    maxWidth:          340,
+  },
+  spamText: {
+    flex:       1,
+    fontSize:   13,
+    lineHeight: 19,
+    color:      '#E0E0E0',
   },
   resendBtn: {
     paddingVertical: 10,

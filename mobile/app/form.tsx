@@ -1,13 +1,83 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, Alert, LayoutChangeEvent, GestureResponderEvent } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { api } from '@/api';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
+
+// ── BigSlider ───────────────────────────────────────────────────────────────
+// Custom slider built on top of View+touch responders so it renders the same
+// on web and native: thick 10-px track, 32-px thumb with white ring, filled
+// segment in the accent colour. Much more visible than the platform slider.
+interface BigSliderProps {
+  value:    number;
+  min:      number;
+  max:      number;
+  step?:    number;
+  color:    string;
+  onChange: (v: number) => void;
+}
+function BigSlider({ value, min, max, step = 1, color, onChange }: BigSliderProps) {
+  const [width, setWidth] = useState(1);
+  const pct = Math.max(0, Math.min(1, (value - min) / (max - min)));
+
+  const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
+  const handle = (e: GestureResponderEvent) => {
+    const x = e.nativeEvent.locationX;
+    const rawPct = Math.max(0, Math.min(1, x / Math.max(width, 1)));
+    const raw    = min + rawPct * (max - min);
+    const snapped = Math.round(raw / step) * step;
+    const clamped = Math.max(min, Math.min(max, snapped));
+    if (clamped !== value) onChange(clamped);
+  };
+
+  return (
+    <View
+      style={bs.wrap}
+      onLayout={onLayout}
+      onStartShouldSetResponder={() => true}
+      onMoveShouldSetResponder={() => true}
+      onResponderGrant={handle}
+      onResponderMove={handle}
+    >
+      <View style={bs.track}>
+        <View style={[bs.fill, { width: `${pct * 100}%` as any, backgroundColor: color }]} />
+      </View>
+      <View
+        pointerEvents="none"
+        style={[
+          bs.thumb,
+          {
+            left:            Math.max(0, pct * width - 16),
+            backgroundColor: color,
+            shadowColor:     color,
+          },
+        ]}
+      />
+    </View>
+  );
+}
+const bs = StyleSheet.create({
+  wrap:  { width: '100%' as any, height: 48, justifyContent: 'center', paddingVertical: 4 },
+  track: { height: 10, borderRadius: 5, backgroundColor: '#1f1f22', overflow: 'hidden' },
+  fill:  { height: 10, borderRadius: 5 },
+  thumb: {
+    position:      'absolute',
+    top:           8,
+    width:         32,
+    height:        32,
+    borderRadius:  16,
+    borderWidth:   3,
+    borderColor:   '#FFFFFF',
+    shadowOpacity: 0.6,
+    shadowRadius:  10,
+    shadowOffset:  { width: 0, height: 0 },
+    elevation:     6,
+  },
+});
 import { useAuth } from '@/context/AuthContext';
 
 // ── Level ring — partial circle indicator (25/50/75/100%) ─────────────────
@@ -38,14 +108,12 @@ function LevelRing({ percent, color, size = 34 }: { percent: number; color: stri
 const INTRO_EN: Step[] = [
   {
     key: 'gender',
-    question: 'How would you',
-    questionAccent: 'identify yourself?',
+    question: 'What is your',
+    questionAccent: 'biological physique?',
     type: 'iconSelect',
     iconOptions: [
-      { label: 'Man',              icon: 'male-outline'        },
-      { label: 'Woman',            icon: 'female-outline'      },
-      { label: 'Non-binary',       icon: 'male-female-outline' },
-      { label: 'Prefer not to say' },
+      { label: 'Male',   icon: 'male-outline'   },
+      { label: 'Female', icon: 'female-outline' },
     ],
   },
   { key: 'height_cm', question: 'What is your', questionAccent: 'height?', type: 'height' },
@@ -67,14 +135,12 @@ const INTRO_EN: Step[] = [
 const INTRO_DE: Step[] = [
   {
     key: 'gender',
-    question: 'Wie würdest du dich',
-    questionAccent: 'identifizieren?',
+    question: 'Was ist dein',
+    questionAccent: 'biologischer Körperbau?',
     type: 'iconSelect',
     iconOptions: [
-      { label: 'Mann',                       icon: 'male-outline'        },
-      { label: 'Frau',                       icon: 'female-outline'      },
-      { label: 'Non-binary',                 icon: 'male-female-outline' },
-      { label: 'Möchte ich nicht angeben'  },
+      { label: 'Männlich', icon: 'male-outline'   },
+      { label: 'Weiblich', icon: 'female-outline' },
     ],
   },
   { key: 'height_cm', question: 'Wie',    questionAccent: 'groß bist du?', type: 'height' },
@@ -98,6 +164,8 @@ interface StepOption {
   subtitle?: string;
   icon?: React.ComponentProps<typeof Ionicons>['name'];
   ringPercent?: number;
+  // Sub-points that appear when this option is expanded — all multi-select.
+  subOptions?: string[];
 }
 interface Step {
   key:      string;
@@ -110,6 +178,10 @@ interface Step {
   min?:     number;
   max?:     number;
   unit?:    string;
+  // When true, iconSelect allows picking multiple options (no auto-advance).
+  multi?:   boolean;
+  // When true, the "None/Keine" option is mutually exclusive with the rest.
+  exclusiveNone?: boolean;
 }
 
 // ── Day selection step — inserted after days_per_week in every plan ────────
@@ -165,8 +237,8 @@ const EN: Record<string, Step[]> = {
         { label: 'Very clean',         icon: 'nutrition-outline'  },
       ]},
     { key: 'days_per_week', question: 'How many days per week', questionAccent: 'can you train?', type: 'slider', min: 2, max: 6, unit: ' days' },
-    { key: 'equipment',     question: 'What do you', questionAccent: 'train with?', type: 'iconSelect', iconOptions: EQUIPMENT_EN },
-    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?',   type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'equipment',     question: 'What do you', questionAccent: 'train with?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_EN },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?',   type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 
   'HYPERTROPHY': [
@@ -186,8 +258,8 @@ const EN: Record<string, Step[]> = {
         { label: 'Shoulders',icon: 'triangle-outline'},
       ]},
     { key: 'days_per_week', question: 'How many days per week', questionAccent: 'can you lift?', type: 'slider', min: 3, max: 6, unit: ' days' },
-    { key: 'equipment',     question: 'What equipment', questionAccent: 'do you have?', type: 'iconSelect', iconOptions: EQUIPMENT_EN },
-    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?',       type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'equipment',     question: 'What equipment', questionAccent: 'do you have?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_EN },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?',       type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 
   'TRANSFORMATION': [
@@ -205,8 +277,8 @@ const EN: Record<string, Step[]> = {
         { label: 'Just the training', icon: 'close-circle-outline'  },
       ]},
     { key: 'days_per_week', question: 'How many days per week', questionAccent: 'can you train?', type: 'slider', min: 3, max: 6, unit: ' days' },
-    { key: 'equipment',     question: 'What do you', questionAccent: 'train with?', type: 'iconSelect', iconOptions: EQUIPMENT_EN },
-    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?',   type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'equipment',     question: 'What do you', questionAccent: 'train with?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_EN },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?',   type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 
   'FIRST STEPS': [
@@ -225,8 +297,8 @@ const EN: Record<string, Step[]> = {
         { label: 'Giving up',            icon: 'trending-down-outline' },
       ]},
     { key: 'days_per_week', question: 'How many days feel', questionAccent: 'manageable?', hint: 'Starting with 2–3 days is totally fine', type: 'slider', min: 2, max: 4, unit: ' days' },
-    { key: 'equipment',     question: 'What do you', questionAccent: 'have access to?', type: 'iconSelect', iconOptions: EQUIPMENT_EN },
-    { key: 'injuries',      question: 'Any pain we', questionAccent: 'should know?',    type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'equipment',     question: 'What do you', questionAccent: 'have access to?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_EN },
+    { key: 'injuries',      question: 'Any pain we', questionAccent: 'should know?',    type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 
   'NO GYM': [
@@ -245,7 +317,7 @@ const EN: Record<string, Step[]> = {
         { label: 'Full home gym',          icon: 'barbell-outline'    },
       ]},
     { key: 'days_per_week', question: 'How many days per week', questionAccent: 'at home?', type: 'slider', min: 2, max: 6, unit: ' days' },
-    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 
   'POOL': [
@@ -271,7 +343,7 @@ const EN: Record<string, Step[]> = {
         { label: 'Private pool',  icon: 'home-outline'     },
         { label: 'Open water',    icon: 'water-outline'    },
       ]},
-    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 
   'RACE READY': [
@@ -290,8 +362,8 @@ const EN: Record<string, Step[]> = {
         { label: 'Multiple races',     icon: 'trophy-outline'  },
       ]},
     { key: 'days_per_week', question: 'How many days per week', questionAccent: 'can you train?', type: 'slider', min: 3, max: 6, unit: ' days' },
-    { key: 'equipment',     question: 'What equipment', questionAccent: 'do you have?', type: 'iconSelect', iconOptions: EQUIPMENT_EN },
-    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?',       type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'equipment',     question: 'What equipment', questionAccent: 'do you have?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_EN },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?',       type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 
   'HALF OR FULL': [
@@ -311,7 +383,7 @@ const EN: Record<string, Step[]> = {
       ]},
     { key: 'days_per_week', question: 'How many running days', questionAccent: 'per week?', type: 'slider', min: 3, max: 6, unit: ' days' },
     { key: 'long_run_km',   question: 'Your longest run', questionAccent: 'so far?', hint: 'In kilometres', type: 'slider', min: 3, max: 30, unit: ' km' },
-    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 
   'FUNCTIONAL': [
@@ -329,8 +401,8 @@ const EN: Record<string, Step[]> = {
         { label: 'Regular athlete',   icon: 'trophy-outline' },
       ]},
     { key: 'days_per_week', question: 'How many days per week', questionAccent: 'can you WOD?', type: 'slider', min: 3, max: 6, unit: ' days' },
-    { key: 'equipment',     question: 'What box or', questionAccent: 'gym do you have?', type: 'iconSelect', iconOptions: EQUIPMENT_EN },
-    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?',         type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'equipment',     question: 'What box or', questionAccent: 'gym do you have?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_EN },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?',         type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 
   'HIGH INTENSITY': [
@@ -349,8 +421,8 @@ const EN: Record<string, Step[]> = {
         { label: 'The finish',  icon: 'flag-outline'          },
       ]},
     { key: 'days_per_week', question: 'How many HIIT sessions', questionAccent: 'per week?', hint: '3–4 days is plenty', type: 'slider', min: 2, max: 5, unit: ' days' },
-    { key: 'equipment',     question: 'What do you', questionAccent: 'have?', type: 'iconSelect', iconOptions: EQUIPMENT_EN },
-    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'equipment',     question: 'What do you', questionAccent: 'have?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_EN },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 
   'MOBILITY': [
@@ -377,7 +449,7 @@ const EN: Record<string, Step[]> = {
         { label: 'Coming back from injury', icon: 'medkit-outline'},
       ]},
     { key: 'days_per_week', question: 'How many days per week', questionAccent: 'can you stretch?', hint: 'Daily works great — even 10 minutes helps', type: 'slider', min: 3, max: 7, unit: ' days' },
-    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 
   'CALISTHENICS': [
@@ -405,7 +477,7 @@ const EN: Record<string, Step[]> = {
         { label: 'Outdoor calisthenics park', icon: 'leaf-outline'   },
       ]},
     { key: 'days_per_week', question: 'How many days per week', questionAccent: 'can you train?', type: 'slider', min: 3, max: 6, unit: ' days' },
-    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 
   'SPORT PREP': [
@@ -435,16 +507,38 @@ const EN: Record<string, Step[]> = {
         { label: 'Strength foundation',   icon: 'barbell-outline' },
       ]},
     { key: 'days_per_week', question: 'How many prep sessions', questionAccent: 'per week?', hint: 'On top of your sport practice', type: 'slider', min: 3, max: 6, unit: ' days' },
-    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 
   'ACTIVE AGING': [
-    { key: 'aging_goal', question: 'What matters', questionAccent: 'most to you?', type: 'iconSelect',
+    { key: 'aging_goal', question: 'What matters', questionAccent: 'most to you?',
+      hint: 'Tap any that apply — you can choose more than one',
+      type: 'iconSelect', multi: true,
       iconOptions: [
-        { label: 'Stay independent',        icon: 'walk-outline'            },
-        { label: 'Prevent falls',           icon: 'shield-checkmark-outline'},
-        { label: 'Better balance',          icon: 'swap-horizontal-outline' },
-        { label: 'Strength for daily life', icon: 'barbell-outline'         },
+        { label: 'Stay independent', icon: 'walk-outline', subOptions: [
+          'Walking without support',
+          'Getting up from a chair or floor',
+          'Climbing stairs',
+          'Carrying groceries',
+        ]},
+        { label: 'Prevent falls', icon: 'shield-checkmark-outline', subOptions: [
+          'Better reaction time',
+          'Stronger legs and hips',
+          'Steadier footing',
+          'Coordination & awareness',
+        ]},
+        { label: 'Better balance', icon: 'swap-horizontal-outline', subOptions: [
+          'Standing balance',
+          'Walking on uneven ground',
+          'Single-leg control',
+          'Core stability',
+        ]},
+        { label: 'Strength for daily life', icon: 'barbell-outline', subOptions: [
+          'Lifting everyday objects',
+          'Opening jars and doors',
+          'Standing up from low seats',
+          'Carrying bags and shopping',
+        ]},
       ]},
     { key: 'current_mobility', question: 'How active are you', questionAccent: 'right now?', type: 'iconSelect',
       iconOptions: [
@@ -462,7 +556,7 @@ const EN: Record<string, Step[]> = {
         { label: 'General weakness',      icon: 'pulse-outline'           },
       ]},
     { key: 'days_per_week', question: 'How many days', questionAccent: 'feel manageable?', hint: '3–4 days is plenty — rest is important', type: 'slider', min: 3, max: 5, unit: ' days' },
-    { key: 'injuries',      question: 'Any pain or', questionAccent: 'medical concerns?', type: 'iconSelect', iconOptions: INJURIES_EN },
+    { key: 'injuries',      question: 'Any pain or', questionAccent: 'medical concerns?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
   ],
 };
 
@@ -475,8 +569,8 @@ const EN_DEFAULT: Step[] = [
       { label: 'Stay active',   icon: 'happy-outline'   },
     ]},
   { key: 'days_per_week', question: 'How many days per week', questionAccent: 'can you train?', type: 'slider', min: 2, max: 6, unit: ' days' },
-  { key: 'equipment',     question: 'What do you', questionAccent: 'train with?', type: 'iconSelect', iconOptions: EQUIPMENT_EN },
-  { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?',   type: 'iconSelect', iconOptions: INJURIES_EN },
+  { key: 'equipment',     question: 'What do you', questionAccent: 'train with?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_EN },
+  { key: 'injuries',      question: 'Any pain or', questionAccent: 'injuries?',   type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_EN },
 ];
 
 // ── German steps ──────────────────────────────────────────────────────────────
@@ -514,8 +608,8 @@ const DE: Record<string, Step[]> = {
         { label: 'Sehr sauber',        icon: 'nutrition-outline'  },
       ]},
     { key: 'days_per_week', question: 'Wie viele Tage pro Woche', questionAccent: 'kannst du?', type: 'slider', min: 2, max: 6, unit: ' Tage' },
-    { key: 'equipment',     question: 'Womit', questionAccent: 'trainierst du?', type: 'iconSelect', iconOptions: EQUIPMENT_DE },
-    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'equipment',     question: 'Womit', questionAccent: 'trainierst du?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 
   'HYPERTROPHY': [
@@ -535,8 +629,8 @@ const DE: Record<string, Step[]> = {
         { label: 'Schultern',icon: 'triangle-outline'},
       ]},
     { key: 'days_per_week', question: 'Wie viele Tage pro Woche', questionAccent: 'kannst du?', type: 'slider', min: 3, max: 6, unit: ' Tage' },
-    { key: 'equipment',     question: 'Welches', questionAccent: 'Equipment hast du?', type: 'iconSelect', iconOptions: EQUIPMENT_DE },
-    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?',  type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'equipment',     question: 'Welches', questionAccent: 'Equipment hast du?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?',  type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 
   'TRANSFORMATION': [
@@ -554,8 +648,8 @@ const DE: Record<string, Step[]> = {
         { label: 'Erstmal nur Training',icon: 'close-circle-outline'     },
       ]},
     { key: 'days_per_week', question: 'Wie viele Tage pro Woche', questionAccent: 'kannst du?', type: 'slider', min: 3, max: 6, unit: ' Tage' },
-    { key: 'equipment',     question: 'Womit', questionAccent: 'trainierst du?', type: 'iconSelect', iconOptions: EQUIPMENT_DE },
-    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'equipment',     question: 'Womit', questionAccent: 'trainierst du?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 
   'FIRST STEPS': [
@@ -574,8 +668,8 @@ const DE: Record<string, Step[]> = {
         { label: 'Aufgeben',          icon: 'trending-down-outline' },
       ]},
     { key: 'days_per_week', question: 'Wie viele Tage fühlen sich', questionAccent: 'machbar an?', hint: '2–3 Tage sind völlig OK', type: 'slider', min: 2, max: 4, unit: ' Tage' },
-    { key: 'equipment',     question: 'Was hast du', questionAccent: 'zur Verfügung?', type: 'iconSelect', iconOptions: EQUIPMENT_DE },
-    { key: 'injuries',      question: 'Schmerzen, die wir', questionAccent: 'kennen sollten?', type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'equipment',     question: 'Was hast du', questionAccent: 'zur Verfügung?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_DE },
+    { key: 'injuries',      question: 'Schmerzen, die wir', questionAccent: 'kennen sollten?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 
   'NO GYM': [
@@ -594,7 +688,7 @@ const DE: Record<string, Step[]> = {
         { label: 'Volles Heimstudio',     icon: 'barbell-outline' },
       ]},
     { key: 'days_per_week', question: 'Wie viele Tage pro Woche', questionAccent: 'zu Hause?', type: 'slider', min: 2, max: 6, unit: ' Tage' },
-    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 
   'POOL': [
@@ -620,7 +714,7 @@ const DE: Record<string, Step[]> = {
         { label: 'Privatpool',       icon: 'home-outline'     },
         { label: 'Freiwasser',       icon: 'water-outline'    },
       ]},
-    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 
   'RACE READY': [
@@ -639,8 +733,8 @@ const DE: Record<string, Step[]> = {
         { label: 'Mehrere Rennen',   icon: 'trophy-outline'  },
       ]},
     { key: 'days_per_week', question: 'Wie viele Tage pro Woche', questionAccent: 'trainieren?', type: 'slider', min: 3, max: 6, unit: ' Tage' },
-    { key: 'equipment',     question: 'Welches', questionAccent: 'Equipment hast du?', type: 'iconSelect', iconOptions: EQUIPMENT_DE },
-    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?',    type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'equipment',     question: 'Welches', questionAccent: 'Equipment hast du?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?',    type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 
   'HALF OR FULL': [
@@ -660,7 +754,7 @@ const DE: Record<string, Step[]> = {
       ]},
     { key: 'days_per_week', question: 'Wie viele Lauf-Tage', questionAccent: 'pro Woche?', type: 'slider', min: 3, max: 6, unit: ' Tage' },
     { key: 'long_run_km',   question: 'Dein längster Lauf', questionAccent: 'bisher?', hint: 'In Kilometern', type: 'slider', min: 3, max: 30, unit: ' km' },
-    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 
   'FUNCTIONAL': [
@@ -678,8 +772,8 @@ const DE: Record<string, Step[]> = {
         { label: 'Regelmäßig dabei', icon: 'trophy-outline' },
       ]},
     { key: 'days_per_week', question: 'Wie viele Tage pro Woche', questionAccent: 'für WODs?', type: 'slider', min: 3, max: 6, unit: ' Tage' },
-    { key: 'equipment',     question: 'Welche Box', questionAccent: 'oder Gym?', type: 'iconSelect', iconOptions: EQUIPMENT_DE },
-    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'equipment',     question: 'Welche Box', questionAccent: 'oder Gym?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 
   'HIGH INTENSITY': [
@@ -698,8 +792,8 @@ const DE: Record<string, Step[]> = {
         { label: 'Das Ziel',       icon: 'flag-outline'          },
       ]},
     { key: 'days_per_week', question: 'Wie viele HIIT-Einheiten', questionAccent: 'pro Woche?', hint: '3–4 Tage sind genug', type: 'slider', min: 2, max: 5, unit: ' Tage' },
-    { key: 'equipment',     question: 'Was hast', questionAccent: 'du?', type: 'iconSelect', iconOptions: EQUIPMENT_DE },
-    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'equipment',     question: 'Was hast', questionAccent: 'du?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 
   'MOBILITY': [
@@ -726,7 +820,7 @@ const DE: Record<string, Step[]> = {
         { label: 'Reha nach Verletzung',        icon: 'medkit-outline'  },
       ]},
     { key: 'days_per_week', question: 'Wie viele Tage pro Woche', questionAccent: 'kannst du dehnen?', hint: 'Täglich ist super — schon 10 Minuten helfen', type: 'slider', min: 3, max: 7, unit: ' Tage' },
-    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 
   'CALISTHENICS': [
@@ -754,7 +848,7 @@ const DE: Record<string, Step[]> = {
         { label: 'Outdoor Calisthenics-Park', icon: 'leaf-outline'      },
       ]},
     { key: 'days_per_week', question: 'Wie viele Tage pro Woche', questionAccent: 'kannst du trainieren?', type: 'slider', min: 3, max: 6, unit: ' Tage' },
-    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 
   'SPORT PREP': [
@@ -784,16 +878,38 @@ const DE: Record<string, Step[]> = {
         { label: 'Kraft-Grundlagen',      icon: 'barbell-outline' },
       ]},
     { key: 'days_per_week', question: 'Wie viele Prep-Einheiten', questionAccent: 'pro Woche?', hint: 'Zusätzlich zum eigentlichen Training', type: 'slider', min: 3, max: 6, unit: ' Tage' },
-    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 
   'ACTIVE AGING': [
-    { key: 'aging_goal', question: 'Was ist dir am', questionAccent: 'wichtigsten?', type: 'iconSelect',
+    { key: 'aging_goal', question: 'Was ist dir am', questionAccent: 'wichtigsten?',
+      hint: 'Tippe alles an, was passt — Mehrfachauswahl möglich',
+      type: 'iconSelect', multi: true,
       iconOptions: [
-        { label: 'Selbstständig bleiben',       icon: 'walk-outline'            },
-        { label: 'Stürze vermeiden',            icon: 'shield-checkmark-outline'},
-        { label: 'Bessere Balance',             icon: 'swap-horizontal-outline' },
-        { label: 'Kraft für den Alltag',        icon: 'barbell-outline'         },
+        { label: 'Selbstständig bleiben', icon: 'walk-outline', subOptions: [
+          'Ohne Hilfe gehen',
+          'Vom Stuhl oder Boden aufstehen',
+          'Treppen steigen',
+          'Einkäufe tragen',
+        ]},
+        { label: 'Stürze vermeiden', icon: 'shield-checkmark-outline', subOptions: [
+          'Schnellere Reaktion',
+          'Stärkere Beine und Hüften',
+          'Sichererer Stand',
+          'Koordination & Wahrnehmung',
+        ]},
+        { label: 'Bessere Balance', icon: 'swap-horizontal-outline', subOptions: [
+          'Standgleichgewicht',
+          'Gehen auf unebenem Grund',
+          'Einbeinstand',
+          'Rumpfstabilität',
+        ]},
+        { label: 'Kraft für den Alltag', icon: 'barbell-outline', subOptions: [
+          'Alltagsgegenstände heben',
+          'Gläser und Türen öffnen',
+          'Aus niedrigen Sitzen aufstehen',
+          'Taschen und Einkäufe tragen',
+        ]},
       ]},
     { key: 'current_mobility', question: 'Wie aktiv', questionAccent: 'bist du gerade?', type: 'iconSelect',
       iconOptions: [
@@ -811,7 +927,7 @@ const DE: Record<string, Step[]> = {
         { label: 'Allgemeine Schwäche',     icon: 'pulse-outline'           },
       ]},
     { key: 'days_per_week', question: 'Wie viele Tage', questionAccent: 'sind machbar?', hint: '3–4 Tage sind ideal — Erholung ist wichtig', type: 'slider', min: 3, max: 5, unit: ' Tage' },
-    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'medizinische Bedenken?', type: 'iconSelect', iconOptions: INJURIES_DE },
+    { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'medizinische Bedenken?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
   ],
 };
 
@@ -824,8 +940,8 @@ const DE_DEFAULT: Step[] = [
       { label: 'Aktiv bleiben',    icon: 'happy-outline'   },
     ]},
   { key: 'days_per_week', question: 'Wie viele Tage pro Woche', questionAccent: 'kannst du?', type: 'slider', min: 2, max: 6, unit: ' Tage' },
-  { key: 'equipment',     question: 'Womit', questionAccent: 'trainierst du?', type: 'iconSelect', iconOptions: EQUIPMENT_DE },
-  { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', iconOptions: INJURIES_DE },
+  { key: 'equipment',     question: 'Womit', questionAccent: 'trainierst du?', type: 'iconSelect', multi: true, iconOptions: EQUIPMENT_DE },
+  { key: 'injuries',      question: 'Schmerzen oder', questionAccent: 'Verletzungen?', type: 'iconSelect', multi: true, exclusiveNone: true, iconOptions: INJURIES_DE },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -863,15 +979,16 @@ export default function Form() {
   const storedHeight = user?.height_cm ?? null;
   const storedWeight = user?.weight_kg ?? null;
 
-  // Slider initial positions — start at the minimum so user can see the value
-  // increasing as they slide up
-  const HEIGHT_MIN = 140;
-  const WEIGHT_MIN = 40;
+  // Default to a middle-of-range value so the slider thumb isn't parked at
+  // the edge — users still need to touch the slider to confirm, but at least
+  // they see a realistic starting number.
+  const HEIGHT_DEFAULT = 170;
+  const WEIGHT_DEFAULT = 70;
 
   const [step,        setStep]        = useState(0);
-  const [answers,     setAnswers]     = useState<Record<string, string | number>>({
-    height_cm: storedHeight ?? HEIGHT_MIN,
-    weight_kg: storedWeight ?? WEIGHT_MIN,
+  const [answers,     setAnswers]     = useState<Record<string, string | number | string[] | Record<string, string[]>>>({
+    height_cm: storedHeight ?? HEIGHT_DEFAULT,
+    weight_kg: storedWeight ?? WEIGHT_DEFAULT,
     ...(user?.gender ? { gender: user.gender } : {}),
   });
   const [loading,     setLoading]     = useState(false);
@@ -909,7 +1026,33 @@ export default function Form() {
   const submit = async () => {
     setLoading(true);
     try {
-      const q = await api.questionnaire.save({ ...answers, plan_id: planId ? Number(planId) : undefined });
+      // Serialize array answers and drop the internal __subs buckets by
+      // merging their sub-picks into the main key as a comma-separated list.
+      const payload: Record<string, any> = {};
+      const subBuckets: Record<string, Record<string, string[]>> = {};
+      for (const [k, v] of Object.entries(answers)) {
+        if (k.endsWith('__subs')) {
+          subBuckets[k.slice(0, -'__subs'.length)] = v as Record<string, string[]>;
+        } else {
+          payload[k] = v;
+        }
+      }
+      for (const [k, v] of Object.entries(payload)) {
+        if (Array.isArray(v)) {
+          const subs = subBuckets[k];
+          if (subs) {
+            // Expand each selected main option with its sub-picks:
+            //   "Stay independent (Walking without support, Climbing stairs), Prevent falls"
+            payload[k] = (v as string[]).map(main => {
+              const picks = subs[main];
+              return picks && picks.length ? `${main} (${picks.join(', ')})` : main;
+            }).join(', ');
+          } else {
+            payload[k] = (v as string[]).join(', ');
+          }
+        }
+      }
+      const q = await api.questionnaire.save({ ...payload, plan_id: planId ? Number(planId) : undefined });
       router.replace({ pathname: '/generating', params: { questionnaireId: q.id, difficulty: difficulty || '' } });
     } catch {
       setLoading(false);
@@ -955,27 +1098,118 @@ export default function Form() {
         </Text>
         {current.hint && <Text style={s.hint}>{current.hint}</Text>}
 
-        {/* Icon select — gender screen */}
-        {current.type === 'iconSelect' && (
-          <View style={s.iconOptions}>
-            {current.iconOptions!.map(opt => {
-              const active = answers[current.key] === opt.label;
-              return (
-                <TouchableOpacity
-                  key={opt.label}
-                  style={[s.iconOption, active && { borderColor: diffColor, backgroundColor: diffColor + '10' }]}
-                  onPress={() => answer(opt.label)}
-                  activeOpacity={0.75}
-                >
-                  {opt.icon && <Ionicons name={opt.icon} size={22} color={active ? diffColor : colors.text} style={{ width: 26 }} />}
-                  {!opt.icon && <View style={{ width: 26 }} />}
-                  <Text style={[s.iconOptionText, active && { color: diffColor, fontWeight: '700' }]}>{opt.label}</Text>
-                  <Ionicons name="chevron-forward" size={18} color={active ? diffColor : colors.muted} />
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
+        {/* Icon select — single OR multi-select, with optional sub-points */}
+        {current.type === 'iconSelect' && (() => {
+          const isMulti = current.multi === true;
+          const rawSelected = answers[current.key];
+          const selectedLabels: string[] = isMulti
+            ? (Array.isArray(rawSelected) ? rawSelected as string[] : [])
+            : [];
+          const selectedSubs: Record<string, string[]> = (answers[current.key + '__subs'] as any) ?? {};
+          const noneLabels = new Set(['None', 'Keine', 'None ✅', '✅ None — fit and healthy', '✅ Keine — ich bin fit und gesund']);
+
+          const toggleMain = (label: string, hasSubs: boolean) => {
+            if (!isMulti) {
+              answer(label);
+              return;
+            }
+            setAnswers(a => {
+              const prev = Array.isArray(a[current.key]) ? [...(a[current.key] as string[])] : [];
+              const prevSubs = { ...(a[current.key + '__subs'] as Record<string, string[]> ?? {}) };
+              const i = prev.indexOf(label);
+              let next: string[];
+              if (i >= 0) {
+                next = prev.filter(l => l !== label);
+                delete prevSubs[label];
+              } else {
+                // Handle "None" exclusivity
+                if (current.exclusiveNone && /^(none|keine)/i.test(label)) {
+                  next = [label];
+                } else if (current.exclusiveNone) {
+                  next = prev.filter(l => !/^(none|keine)/i.test(l));
+                  next.push(label);
+                } else {
+                  next = [...prev, label];
+                }
+              }
+              touch(current.key);
+              return { ...a, [current.key]: next, [current.key + '__subs']: prevSubs };
+            });
+          };
+
+          const toggleSub = (parent: string, sub: string) => {
+            setAnswers(a => {
+              const prevSubs = { ...(a[current.key + '__subs'] as Record<string, string[]> ?? {}) };
+              const list = prevSubs[parent] ? [...prevSubs[parent]] : [];
+              const i = list.indexOf(sub);
+              if (i >= 0) list.splice(i, 1); else list.push(sub);
+              prevSubs[parent] = list;
+
+              // Make sure the parent is in the selected list if at least one sub is picked
+              const prev = Array.isArray(a[current.key]) ? [...(a[current.key] as string[])] : [];
+              if (list.length > 0 && !prev.includes(parent)) prev.push(parent);
+
+              touch(current.key);
+              return { ...a, [current.key]: prev, [current.key + '__subs']: prevSubs };
+            });
+          };
+
+          return (
+            <View style={s.iconOptions}>
+              {current.iconOptions!.map(opt => {
+                const active = isMulti
+                  ? selectedLabels.includes(opt.label)
+                  : answers[current.key] === opt.label;
+                const subs = opt.subOptions ?? [];
+                const hasSubs = subs.length > 0;
+                const pickedSubs = selectedSubs[opt.label] ?? [];
+
+                return (
+                  <View key={opt.label}>
+                    <TouchableOpacity
+                      style={[s.iconOption, active && { borderColor: diffColor, backgroundColor: diffColor + '10' }]}
+                      onPress={() => toggleMain(opt.label, hasSubs)}
+                      activeOpacity={0.75}
+                    >
+                      {opt.icon && <Ionicons name={opt.icon} size={22} color={active ? diffColor : colors.text} style={{ width: 26 }} />}
+                      {!opt.icon && <View style={{ width: 26 }} />}
+                      <Text style={[s.iconOptionText, active && { color: diffColor, fontWeight: '700' }]}>{opt.label}</Text>
+                      {isMulti ? (
+                        <View style={[s.checkBox, active && { borderColor: diffColor, backgroundColor: diffColor }]}>
+                          {active && <Ionicons name="checkmark" size={14} color="#fff" />}
+                        </View>
+                      ) : (
+                        <Ionicons name="chevron-forward" size={18} color={active ? diffColor : colors.muted} />
+                      )}
+                    </TouchableOpacity>
+
+                    {/* Sub-options: always visible when the parent has them */}
+                    {hasSubs && active && (
+                      <View style={[s.subList, { borderColor: diffColor + '40' }]}>
+                        {subs.map(sub => {
+                          const subActive = pickedSubs.includes(sub);
+                          return (
+                            <TouchableOpacity
+                              key={sub}
+                              style={s.subRow}
+                              onPress={() => toggleSub(opt.label, sub)}
+                              activeOpacity={0.7}
+                            >
+                              <View style={[s.subCheck, subActive && { borderColor: diffColor, backgroundColor: diffColor }]}>
+                                {subActive && <Ionicons name="checkmark" size={12} color="#fff" />}
+                              </View>
+                              <Text style={[s.subText, subActive && { color: diffColor, fontWeight: '700' }]}>{sub}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })()}
 
         {/* Level select — fitness level with ring indicator */}
         {current.type === 'levelSelect' && (
@@ -1055,7 +1289,7 @@ export default function Form() {
 
         {/* Height picker — cm/ft toggle + value */}
         {current.type === 'height' && (() => {
-          const h = Number(answers.height_cm) || 140;
+          const h = Number(answers.height_cm) || 170;
           return (
             <View style={s.measureWrap}>
               <View style={s.unitToggle}>
@@ -1073,24 +1307,25 @@ export default function Form() {
                 </Text>
                 <Text style={s.measureUnit}>{heightUnit}</Text>
               </View>
-              <Slider
-                style={s.measureSlider}
-                minimumValue={140}
-                maximumValue={210}
-                step={1}
+              <BigSlider
                 value={h}
-                minimumTrackTintColor={diffColor}
-                maximumTrackTintColor={colors.border}
-                thumbTintColor={diffColor}
-                onValueChange={val => { touch('height_cm'); setAnswers(a => ({ ...a, height_cm: val })); }}
+                min={120}
+                max={230}
+                step={1}
+                color={diffColor}
+                onChange={val => { touch('height_cm'); setAnswers(a => ({ ...a, height_cm: val })); }}
               />
+              <View style={s.measureLabels}>
+                <Text style={s.measureLabel}>120 cm</Text>
+                <Text style={s.measureLabel}>230 cm</Text>
+              </View>
             </View>
           );
         })()}
 
         {/* Weight picker — kg/lbs toggle + value */}
         {current.type === 'weight' && (() => {
-          const w = Number(answers.weight_kg) || 40;
+          const w = Number(answers.weight_kg) || 70;
           return (
             <View style={s.measureWrap}>
               <View style={s.unitToggle}>
@@ -1108,17 +1343,18 @@ export default function Form() {
                 </Text>
                 <Text style={s.measureUnit}>{weightUnit}</Text>
               </View>
-              <Slider
-                style={s.measureSlider}
-                minimumValue={40}
-                maximumValue={150}
-                step={1}
+              <BigSlider
                 value={w}
-                minimumTrackTintColor={diffColor}
-                maximumTrackTintColor={colors.border}
-                thumbTintColor={diffColor}
-                onValueChange={val => { touch('weight_kg'); setAnswers(a => ({ ...a, weight_kg: val })); }}
+                min={30}
+                max={200}
+                step={1}
+                color={diffColor}
+                onChange={val => { touch('weight_kg'); setAnswers(a => ({ ...a, weight_kg: val })); }}
               />
+              <View style={s.measureLabels}>
+                <Text style={s.measureLabel}>30 kg</Text>
+                <Text style={s.measureLabel}>200 kg</Text>
+              </View>
             </View>
           );
         })()}
@@ -1150,16 +1386,13 @@ export default function Form() {
               </Text>
               <Text style={s.sliderUnit}>{current.unit}</Text>
             </View>
-            <Slider
-              style={s.slider}
-              minimumValue={current.min}
-              maximumValue={current.max}
-              step={1}
+            <BigSlider
               value={sliderVal}
-              minimumTrackTintColor={diffColor}
-              maximumTrackTintColor={colors.border}
-              thumbTintColor={diffColor}
-              onValueChange={val => { touch(current.key); setAnswers(a => ({ ...a, [current.key]: val })); }}
+              min={current.min!}
+              max={current.max!}
+              step={1}
+              color={diffColor}
+              onChange={val => { touch(current.key); setAnswers(a => ({ ...a, [current.key]: val })); }}
             />
             <View style={s.sliderLabels}>
               <Text style={s.sliderMin}>{current.min}{current.unit}</Text>
@@ -1182,6 +1415,7 @@ export default function Form() {
             // Validate current step: must have a real answer
             const isSlider = current.type === 'slider' || current.type === 'height' || current.type === 'weight';
             const isDaySelect = current.type === 'daySelect';
+            const isMulti = current.type === 'iconSelect' && current.multi === true;
             const isChoice = current.type === 'iconSelect' || current.type === 'levelSelect' || current.type === 'select';
 
             const isAnswered =
@@ -1189,15 +1423,17 @@ export default function Form() {
                 ? ((answers.training_days as unknown as string[])?.length ?? 0) === ((answers.days_per_week as number) ?? 3)
                 : isSlider
                   ? touchedKeys.has(current.key)
-                  : isChoice
-                    ? answers[current.key] != null
-                    : true;
+                  : isMulti
+                    ? Array.isArray(answers[current.key]) && (answers[current.key] as string[]).length > 0
+                    : isChoice
+                      ? answers[current.key] != null
+                      : true;
 
             const isLast = step === total - 1;
 
-            // For sliders, day select, and the FINAL step: render an explicit Next/Build button
-            // (choice steps on non-final rely on auto-advance, so no button is shown)
-            if (!isSlider && !isDaySelect && !isLast) return null;
+            // Sliders, day select, multi-select, and the FINAL step all render
+            // an explicit Next/Build button (single-choice steps use auto-advance).
+            if (!isSlider && !isDaySelect && !isMulti && !isLast) return null;
 
             return (
               <TouchableOpacity
@@ -1248,6 +1484,42 @@ const s = StyleSheet.create({
   iconOption:       { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0d0d0d', borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 16, paddingHorizontal: 16, gap: 14 },
   iconOptionText:   { flex: 1, fontSize: 16, color: colors.text, fontWeight: '500' },
 
+  // Multi-select checkbox + sub-point list
+  checkBox: {
+    width:          22,
+    height:         22,
+    borderRadius:   6,
+    borderWidth:    2,
+    borderColor:    colors.border,
+    alignItems:     'center',
+    justifyContent: 'center',
+  },
+  subList: {
+    marginTop:        -4,
+    marginBottom:     6,
+    marginLeft:       14,
+    paddingLeft:      14,
+    borderLeftWidth:  2,
+    paddingVertical:  4,
+  },
+  subRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           10,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+  },
+  subCheck: {
+    width:          18,
+    height:         18,
+    borderRadius:   5,
+    borderWidth:    2,
+    borderColor:    colors.border,
+    alignItems:     'center',
+    justifyContent: 'center',
+  },
+  subText: { flex: 1, fontSize: 14, color: colors.text, fontWeight: '500' },
+
   // Level select (fitness level with ring)
   levelOption:      { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0d0d0d', borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 14, gap: 14 },
   levelText:        { flex: 1 },
@@ -1268,7 +1540,8 @@ const s = StyleSheet.create({
   measureDisplay:   { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 24 },
   measureVal:       { fontSize: 56, fontWeight: '800', color: colors.text },
   measureUnit:      { fontSize: 18, color: colors.muted, fontWeight: '500' },
-  measureSlider:    { width: '100%' as any, height: 40 },
+  measureLabels:    { width: '100%' as any, flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  measureLabel:     { fontSize: 12, color: colors.muted, fontWeight: '600' },
 
   options:          { gap: 10, marginTop: 16 },
   option:           { backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: 16, padding: 16 },

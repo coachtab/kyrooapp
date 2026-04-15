@@ -219,14 +219,18 @@ export default function ProgramScreen() {
 
         {/* Header */}
         <View style={s.header}>
-          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-            <Ionicons name="chevron-back" size={24} color={colors.text} />
-          </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={[s.statusLabel, { color: diffColor }]}>{statusLabel}</Text>
             <Text style={s.title} numberOfLines={2}>{program.name}</Text>
           </View>
-          <Ionicons name={iconName} size={28} color={diffColor} />
+          <Ionicons name={iconName} size={28} color={diffColor} style={{ marginRight: 12 }} />
+          <TouchableOpacity
+            onPress={() => router.replace('/(tabs)/plans' as any)}
+            style={s.closeBtn}
+            hitSlop={12}
+          >
+            <Ionicons name="close" size={22} color={colors.text} />
+          </TouchableOpacity>
         </View>
 
         {/* Completion hero — replaces swipe card when program is completed */}
@@ -455,6 +459,16 @@ const s = StyleSheet.create({
   // Header
   header:        { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
   backBtn:       { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  closeBtn: {
+    width:           36,
+    height:          36,
+    borderRadius:    18,
+    borderWidth:     1.5,
+    borderColor:     colors.border,
+    backgroundColor: '#0d0d0d',
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
   statusLabel:   { fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 2 },
   title:         { fontSize: 22, fontWeight: '800', color: colors.text },
 
