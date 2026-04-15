@@ -205,24 +205,39 @@ function SwipeableProgramCard({
               },
             ]} />
           </View>
+
+          {/* Primary action — visible button so users don't have to discover the swipe gesture */}
+          {!isCompleted && (
+            <View style={cs.actionRow}>
+              <TouchableOpacity
+                style={[cs.actionBtn, { backgroundColor: diffColor }]}
+                onPress={(e) => { e.stopPropagation?.(); onStatusChange(canPause ? 'paused' : 'active'); }}
+                activeOpacity={0.85}
+              >
+                <Ionicons name={canPause ? 'pause' : 'play'} size={14} color="#fff" />
+                <Text style={cs.actionBtnText}>
+                  {canPause
+                    ? (lang === 'de' ? 'Pausieren' : 'Pause')
+                    : prog.status === 'paused'
+                      ? (lang === 'de' ? 'Fortsetzen' : 'Resume')
+                      : (lang === 'de' ? 'Starten' : 'Start')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={cs.openBtn}
+                onPress={(e) => { e.stopPropagation?.(); onTap(); }}
+                activeOpacity={0.75}
+              >
+                <Text style={[cs.openBtnText, { color: diffColor }]}>
+                  {lang === 'de' ? 'Ansehen' : 'Open'}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color={diffColor} />
+              </TouchableOpacity>
+            </View>
+          )}
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Demo hand — floats above the card showing the swipe direction */}
-      {showDemo && (canStart || canPause) && (
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            cs.demoHand,
-            {
-              opacity: demoOpacity,
-              transform: [{ translateX: demoX }, { rotate: canPause ? '90deg' : '-90deg' }],
-            },
-          ]}
-        >
-          <GloveHand size={46} />
-        </Animated.View>
-      )}
     </View>
   );
 }
@@ -238,6 +253,32 @@ const cs = StyleSheet.create({
   head:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
   name:       { flex: 1, fontSize: 16, fontWeight: '700', color: colors.text },
   nameCompleted: { color: colors.muted, textDecorationLine: 'line-through' },
+
+  // Action buttons (primary start/pause + secondary open)
+  actionRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           10,
+    marginTop:     4,
+  },
+  actionBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               6,
+    paddingHorizontal: 14,
+    paddingVertical:   9,
+    borderRadius:      10,
+  },
+  actionBtnText: { fontSize: 13, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
+  openBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               4,
+    paddingHorizontal: 10,
+    paddingVertical:   9,
+    marginLeft:        'auto',
+  },
+  openBtnText: { fontSize: 13, fontWeight: '700' },
 
   // Completed ribbon — corner badge
   completedBadge: {

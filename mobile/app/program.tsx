@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Alert, Animated, PanResponder, RefreshControl, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Alert, Animated, PanResponder, RefreshControl } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -471,7 +471,7 @@ export default function ProgramScreen() {
 
 // ── Schedule + vacation card ──────────────────────────────────────────────
 const APP_FONT_STACK =
-  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+  '"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
 const DATE_INPUT_STYLE: any = {
   boxSizing:       'border-box',
@@ -504,7 +504,7 @@ interface ScheduleCardProps {
 function ScheduleCard({ program, diffColor, lang, onUpdated }: ScheduleCardProps) {
   const [busy, setBusy] = useState(false);
   const [localDays, setLocalDays] = useState<string[]>(program.training_days ?? []);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const defaultEnd = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
   const [breakStart, setBreakStart] = useState(today);
@@ -534,15 +534,25 @@ function ScheduleCard({ program, diffColor, lang, onUpdated }: ScheduleCardProps
     }
   };
 
-  const onVacation = !!(program.vacation_start && program.vacation_end);
-  const vacationActive = onVacation &&
-    program.vacation_start! <= today && today <= program.vacation_end!;
+  // Normalise any server date value (YYYY-MM-DD, full ISO timestamp, or Date)
+  // down to a plain YYYY-MM-DD string — the form inputs want that shape.
+  const toDateOnly = (v: string | Date | null | undefined): string => {
+    if (!v) return '';
+    if (v instanceof Date) return v.toISOString().slice(0, 10);
+    return String(v).slice(0, 10);
+  };
+  const vacStart = toDateOnly(program.vacation_start as any);
+  const vacEnd   = toDateOnly(program.vacation_end as any);
+
+  const onVacation = !!(vacStart && vacEnd);
+  const vacationActive = onVacation && vacStart <= today && today <= vacEnd;
 
   // Short, clean range: "Apr 15 – 22" when same month, "Apr 28 – May 5" otherwise.
   const formatRange = (startIso: string, endIso: string): string => {
     const locale = lang === 'de' ? 'de-DE' : 'en-US';
-    const s = new Date(startIso + 'T00:00:00');
-    const e = new Date(endIso + 'T00:00:00');
+    const s = new Date(`${startIso}T00:00:00`);
+    const e = new Date(`${endIso}T00:00:00`);
+    if (isNaN(+s) || isNaN(+e)) return `${startIso} → ${endIso}`;
     const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
     const monthFmt = new Intl.DateTimeFormat(locale, { month: 'short' });
     if (sameMonth) {
@@ -555,12 +565,11 @@ function ScheduleCard({ program, diffColor, lang, onUpdated }: ScheduleCardProps
     return `${startShort} – ${endShort}`;
   };
 
-  const openBreakModal = () => {
-    // Reset defaults every time so it always starts from today
+  const openBreakForm = () => {
     const t = new Date().toISOString().slice(0, 10);
     setBreakStart(t);
     setBreakEnd(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
-    setModalOpen(true);
+    setFormOpen(true);
   };
 
   const saveBreak = async () => {
@@ -573,7 +582,7 @@ function ScheduleCard({ program, diffColor, lang, onUpdated }: ScheduleCardProps
     setBusy(true);
     try {
       await api.programs.setVacation(program.id, breakStart, breakEnd);
-      setModalOpen(false);
+      setFormOpen(false);
       onUpdated();
     } catch (err: any) {
       Alert.alert('', err.message);
@@ -636,7 +645,7 @@ function ScheduleCard({ program, diffColor, lang, onUpdated }: ScheduleCardProps
                 : (lang === 'de' ? 'Pause geplant' : 'Break scheduled')}
             </Text>
             <Text style={sched.vacationDates}>
-              {formatRange(program.vacation_start!, program.vacation_end!)}
+              {formatRange(vacStart, vacEnd)}
             </Text>
           </View>
           <TouchableOpacity onPress={clearVacation} disabled={busy}>
@@ -646,77 +655,63 @@ function ScheduleCard({ program, diffColor, lang, onUpdated }: ScheduleCardProps
           </TouchableOpacity>
         </View>
       ) : (
-        <TouchableOpacity
-          style={[sched.vacationBtn, { borderColor: diffColor }]}
-          onPress={openBreakModal}
-          disabled={busy}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="pause-circle-outline" size={20} color={diffColor} />
-          <Text style={[sched.vacationBtnText, { color: diffColor }]}>
-            {lang === 'de' ? 'Pause einplanen' : 'Schedule a break'}
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Break modal — modern card with native date inputs (web) */}
-      <Modal visible={modalOpen} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setModalOpen(false)}>
-        <View style={sched.modalBackdrop}>
-          <View style={[sched.modalCard, { borderColor: diffColor + '55' }]}>
-            <View style={sched.modalHeader}>
-              <Ionicons name="pause-circle-outline" size={22} color={diffColor} />
-              <Text style={sched.modalTitle}>
+        !formOpen ? (
+          <TouchableOpacity
+            style={[sched.vacationBtn, { borderColor: diffColor }]}
+            onPress={openBreakForm}
+            disabled={busy}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="pause-circle-outline" size={20} color={diffColor} />
+            <Text style={[sched.vacationBtnText, { color: diffColor }]}>
+              {lang === 'de' ? 'Pause einplanen' : 'Schedule a break'}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={[sched.breakForm, { borderColor: diffColor + '55' }]}>
+            <View style={sched.breakFormHeader}>
+              <Ionicons name="pause-circle-outline" size={18} color={diffColor} />
+              <Text style={[sched.breakFormTitle, { color: diffColor }]}>
                 {lang === 'de' ? 'Pause einplanen' : 'Schedule a break'}
               </Text>
-              <TouchableOpacity onPress={() => setModalOpen(false)} hitSlop={10}>
-                <Ionicons name="close" size={20} color={colors.muted} />
+              <TouchableOpacity onPress={() => setFormOpen(false)} hitSlop={10}>
+                <Ionicons name="close" size={18} color={colors.muted} />
               </TouchableOpacity>
             </View>
-
-            <Text style={sched.modalSub}>
+            <Text style={sched.breakFormSub}>
               {lang === 'de'
                 ? 'Urlaub, Krankheit, Reise — wähle den Zeitraum.'
                 : 'Vacation, sickness, travel — pick the range.'}
             </Text>
 
-            <Text style={sched.modalLabel}>
-              {lang === 'de' ? 'VON' : 'FROM'}
-            </Text>
+            <Text style={sched.modalLabel}>{lang === 'de' ? 'VON' : 'FROM'}</Text>
             {Platform.OS === 'web' ? (
-              <View style={sched.inputWrap}>
-                {/* @ts-expect-error — HTML input type=date is web-only */}
-                <input
-                  type="date"
-                  value={breakStart}
-                  min={today}
-                  aria-label={lang === 'de' ? 'Start-Datum' : 'Start date'}
-                  title={lang === 'de' ? 'Start-Datum' : 'Start date'}
-                  placeholder={lang === 'de' ? 'Start-Datum' : 'Start date'}
-                  onChange={(e: any) => setBreakStart(e.target.value)}
-                  style={DATE_INPUT_STYLE}
-                />
-              </View>
+              <input
+                type="date"
+                value={breakStart}
+                min={today}
+                aria-label={lang === 'de' ? 'Start-Datum' : 'Start date'}
+                title={lang === 'de' ? 'Start-Datum' : 'Start date'}
+                placeholder={lang === 'de' ? 'Start-Datum' : 'Start date'}
+                onChange={(e: any) => setBreakStart(e.target.value)}
+                style={DATE_INPUT_STYLE}
+              />
             ) : (
               <Text style={sched.nativeNotice}>{breakStart}</Text>
             )}
 
-            <Text style={sched.modalLabel}>
-              {lang === 'de' ? 'BIS' : 'TO'}
-            </Text>
+            <Text style={sched.modalLabel}>{lang === 'de' ? 'BIS' : 'TO'}</Text>
             {Platform.OS === 'web' ? (
-              <View style={sched.inputWrap}>
-                {/* @ts-expect-error — HTML input type=date is web-only */}
-                <input
-                  type="date"
-                  value={breakEnd}
-                  min={breakStart}
-                  aria-label={lang === 'de' ? 'End-Datum' : 'End date'}
-                  title={lang === 'de' ? 'End-Datum' : 'End date'}
-                  placeholder={lang === 'de' ? 'End-Datum' : 'End date'}
-                  onChange={(e: any) => setBreakEnd(e.target.value)}
-                  style={DATE_INPUT_STYLE}
-                />
-              </View>
+              <input
+                type="date"
+                value={breakEnd}
+                min={breakStart}
+                aria-label={lang === 'de' ? 'End-Datum' : 'End date'}
+                title={lang === 'de' ? 'End-Datum' : 'End date'}
+                placeholder={lang === 'de' ? 'End-Datum' : 'End date'}
+                onChange={(e: any) => setBreakEnd(e.target.value)}
+                style={DATE_INPUT_STYLE}
+              />
             ) : (
               <Text style={sched.nativeNotice}>{breakEnd}</Text>
             )}
@@ -724,7 +719,7 @@ function ScheduleCard({ program, diffColor, lang, onUpdated }: ScheduleCardProps
             <View style={sched.modalActions}>
               <TouchableOpacity
                 style={[sched.modalBtn, sched.modalBtnSecondary]}
-                onPress={() => setModalOpen(false)}
+                onPress={() => setFormOpen(false)}
                 activeOpacity={0.8}
               >
                 <Text style={sched.modalBtnSecondaryText}>
@@ -745,8 +740,8 @@ function ScheduleCard({ program, diffColor, lang, onUpdated }: ScheduleCardProps
               </TouchableOpacity>
             </View>
           </View>
-        </View>
-      </Modal>
+        )
+      )}
     </View>
   );
 }
@@ -807,46 +802,29 @@ const sched = StyleSheet.create({
   vacationDates: { fontSize: 12, color: colors.muted, marginTop: 2 },
   vacationClear: { fontSize: 12, fontWeight: '800' },
 
-  // ── Break modal ────────────────────────────────────────────────────────
-  modalBackdrop: {
-    flex:            1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    alignItems:      'center',
-    justifyContent:  'center',
-    padding:         24,
-  },
-  modalCard: {
-    width:           '100%' as any,
-    maxWidth:        400,
-    minWidth:        0,
-    backgroundColor: '#0d0d0d',
-    borderRadius:    20,
+  // ── Inline break form ────────────────────────────────────────────────
+  breakForm: {
+    backgroundColor: '#141416',
+    borderRadius:    14,
     borderWidth:     1.5,
-    padding:         22,
-    overflow:        'hidden',
+    padding:         16,
   },
-  inputWrap: {
-    width:     '100%' as any,
-    minWidth:  0,
-    overflow:  'hidden',
-  },
-  modalHeader: {
+  breakFormHeader: {
     flexDirection: 'row',
     alignItems:    'center',
-    gap:           10,
-    marginBottom:  6,
+    gap:           8,
+    marginBottom:  4,
   },
-  modalTitle: {
+  breakFormTitle: {
     flex:       1,
-    fontSize:   16,
+    fontSize:   14,
     fontWeight: '800',
-    color:      colors.text,
   },
-  modalSub: {
-    fontSize:     13,
+  breakFormSub: {
+    fontSize:     12,
     color:        colors.muted,
-    lineHeight:   18,
-    marginBottom: 20,
+    lineHeight:   17,
+    marginBottom: 14,
   },
   modalLabel: {
     fontSize:      10,

@@ -28,9 +28,18 @@ export default function Root({ children }: PropsWithChildren) {
 
         <title>Kyroo</title>
 
+        {/* One font across the whole app — DM Sans, all weights */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+        />
+
         <ScrollViewStyleReset />
 
-        {/* PWA feel: no bounce scroll, no tap highlight, no double-tap zoom */}
+        {/* PWA feel: no bounce scroll, no tap highlight, no double-tap zoom.
+            Force DM Sans as the default on every text node and form field. */}
         <style dangerouslySetInnerHTML={{ __html: `
           html, body {
             height: 100%;
@@ -39,8 +48,10 @@ export default function Root({ children }: PropsWithChildren) {
             -webkit-touch-callout: none;
             touch-action: manipulation;
             background-color: #0A0A0A;
+            font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
           }
           * { -webkit-user-select: none; user-select: none; }
+          input, textarea, button, select { font-family: inherit; }
           input, textarea { -webkit-user-select: text; user-select: text; }
         `}} />
 

@@ -537,7 +537,7 @@ ${Object.entries(extras)
 
 Output MUST be valid JSON matching this exact schema:
 {
-  "name": "Program name (short, motivating)",
+  "name": "Short, precise program name — MAX 24 characters, 2-4 words, no emojis, no colons, no subtitles. Examples: 'Lean Shred 12', 'Hypertrophy 16', 'First 5K', 'Push-Pull Build'. Never verbose like 'Your Personalised Full-Body Hypertrophy Transformation Plan'.",
   "overview": "One paragraph explaining the program approach",
   "days": [
     {
@@ -651,11 +651,29 @@ app.post('/api/programs/generate', auth, async (req, res) => {
     const category = q.category || 'GENERAL';
     const totalWeeks = q.total_weeks || 12;
 
+    // Normalise whatever Claude (or the template) returns into a short,
+    // clean program title — strip subtitles, punctuation noise and cap length.
+    const tidyName = (raw) => {
+      if (!raw) return `${category} Program`;
+      let n = String(raw).trim();
+      // Drop anything after a colon, dash, or pipe (typical subtitle separators)
+      n = n.split(/\s+[–—:|-]\s+/)[0].trim();
+      // Collapse whitespace and strip surrounding quotes
+      n = n.replace(/\s+/g, ' ').replace(/^["'“”]+|["'“”]+$/g, '');
+      // Hard cap — cut on a word boundary when possible
+      if (n.length > 28) {
+        const trimmed = n.slice(0, 28);
+        const lastSpace = trimmed.lastIndexOf(' ');
+        n = lastSpace > 16 ? trimmed.slice(0, lastSpace) : trimmed;
+      }
+      return n || `${category} Program`;
+    };
+
     // Try Claude first, fall back to template if it fails
     let programName, days, aiGenerated = false, nutrition = null;
     try {
       const aiPlan = await generateProgramWithClaude(q);
-      programName = aiPlan.name || q.plan_name || `${category} Program`;
+      programName = tidyName(aiPlan.name || q.plan_name || `${category} Program`);
       days = aiPlan.days.map(d => ({
         day: d.day_name || d.day || 'Day',
         focus: d.focus || '',
@@ -672,7 +690,7 @@ app.post('/api/programs/generate', auth, async (req, res) => {
       aiGenerated = true;
     } catch (aiErr) {
       console.error('[generate] Claude failed, falling back to template:', aiErr.message);
-      programName = q.plan_name || `${category} Program`;
+      programName = tidyName(q.plan_name || `${category} Program`);
       const daysNum = q.days_per_week;
       const frequency = daysNum <= 3 ? '2-3 days' : daysNum >= 6 ? '6+ days' : (q.training_frequency || '4-5 days');
       days = buildWeeks(category, frequency, totalWeeks);
