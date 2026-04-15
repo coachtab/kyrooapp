@@ -6,16 +6,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { colors } from '@/theme';
 
-// Placeholder intro video — swap for '/intro.mp4' once the real file is at
-// mobile/public/intro.mp4 (build-web.js copies public/ → dist/).
-const INTRO_VIDEO_SRC = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+// Placeholder intro video + poster — swap for '/intro.mp4' and '/intro-poster.jpg'
+// once the real files are at mobile/public/ (build-web.js copies public/ → dist/).
+const INTRO_VIDEO_SRC  = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+const INTRO_POSTER_SRC = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&h=1800&fit=crop&q=85&auto=format';
 
 export default function Index() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [phase, setPhase] = useState<'loading' | 'splash' | 'greeting'>('loading');
+  const [phase,   setPhase]   = useState<'loading' | 'splash' | 'greeting'>('loading');
+  const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [muted, setMuted] = useState(true);
 
   useEffect(() => {
     if (isLoading) return;
@@ -30,22 +31,23 @@ export default function Index() {
     return () => clearTimeout(t);
   }, [isLoading, user]);
 
-  useEffect(() => {
-    if (phase === 'greeting' && Platform.OS === 'web' && videoRef.current) {
-      videoRef.current.play().catch(() => {});
+  const handlePlay = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      videoRef.current.play().catch(() => {
+        // If unmuted autoplay fails for any reason, fall back to muted
+        if (videoRef.current) {
+          videoRef.current.muted = true;
+          videoRef.current.play().catch(() => {});
+        }
+      });
     }
-  }, [phase]);
+    setPlaying(true);
+  };
 
   const handleNext = () => router.replace('/welcome');
 
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setMuted(videoRef.current.muted);
-    }
-  };
-
-  // Phase 0 — Loading auth state or redirecting logged-in user
+  // Phase 0 — Loading
   if (phase === 'loading') return <View style={s.root} />;
 
   // Phase 1 — Splash: centered KYROO logo
@@ -59,17 +61,18 @@ export default function Index() {
     );
   }
 
-  // Phase 2 — Greeting video (fullscreen, autoplay-muted, loop)
+  // Phase 2 — Intro video with poster + play button
   return (
     <View style={s.root}>
       {Platform.OS === 'web' ? (
         <video
           ref={videoRef}
           src={INTRO_VIDEO_SRC}
-          autoPlay
-          muted
-          loop
+          poster={INTRO_POSTER_SRC}
+          preload="metadata"
           playsInline
+          controls={playing}
+          onEnded={() => setPlaying(false)}
           style={{
             position: 'absolute',
             top: 0, left: 0, right: 0, bottom: 0,
@@ -79,27 +82,30 @@ export default function Index() {
           }}
         />
       ) : (
-        <View style={s.nativePlaceholder}>
-          <Ionicons name="play-circle-outline" size={80} color={colors.muted} />
-        </View>
+        <View style={s.nativePlaceholder} />
       )}
 
-      {/* Subtle bottom gradient for control legibility */}
-      <View style={s.bottomScrim} pointerEvents="none" />
+      {!playing && (
+        <>
+          {/* Dim overlay over the poster */}
+          <View style={s.overlay} pointerEvents="none" />
 
-      <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
-        <View style={{ flex: 1 }} />
-
-        <View style={s.bottomRow}>
-          {Platform.OS === 'web' && (
-            <TouchableOpacity style={s.muteBtn} onPress={toggleMute} activeOpacity={0.7}>
-              <Ionicons
-                name={muted ? 'volume-mute' : 'volume-high'}
-                size={20}
-                color="#fff"
-              />
+          {/* Centered play button */}
+          <View style={s.playWrap} pointerEvents="box-none">
+            <TouchableOpacity
+              style={s.playBtn}
+              activeOpacity={0.85}
+              onPress={handlePlay}
+            >
+              <Ionicons name="play" size={44} color="#fff" style={{ marginLeft: 5 }} />
             </TouchableOpacity>
-          )}
+          </View>
+        </>
+      )}
+
+      <SafeAreaView style={s.safe} edges={['top', 'bottom']} pointerEvents="box-none">
+        <View style={{ flex: 1 }} />
+        <View style={s.bottomRow} pointerEvents="box-none">
           <View style={{ flex: 1 }} />
           <TouchableOpacity style={s.next} activeOpacity={0.75} onPress={handleNext}>
             <Text style={s.nextText}>Next</Text>
@@ -129,20 +135,36 @@ const s = StyleSheet.create({
   logoK: { color: colors.accent },
 
   // Greeting video
-  safe: { flex: 1, width: '100%' as any },
+  safe: { ...StyleSheet.absoluteFillObject },
 
   nativePlaceholder: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#000',
   },
 
-  bottomScrim: {
-    position: 'absolute',
-    left: 0, right: 0, bottom: 0,
-    height: 180,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+
+  playWrap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems:     'center',
+    justifyContent: 'center',
+  },
+  playBtn: {
+    width:           96,
+    height:          96,
+    borderRadius:    48,
+    backgroundColor: 'rgba(233, 69, 96, 0.92)',
+    borderWidth:     3,
+    borderColor:     'rgba(255,255,255,0.9)',
+    alignItems:      'center',
+    justifyContent:  'center',
+    shadowColor:     '#000',
+    shadowOpacity:   0.5,
+    shadowRadius:    20,
+    shadowOffset:    { width: 0, height: 6 },
   },
 
   bottomRow: {
@@ -150,17 +172,6 @@ const s = StyleSheet.create({
     alignItems:        'center',
     paddingHorizontal: 20,
     paddingBottom:     16,
-    gap:               8,
-  },
-  muteBtn: {
-    width:           40,
-    height:          40,
-    borderRadius:    20,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderWidth:     1,
-    borderColor:     'rgba(255,255,255,0.22)',
-    alignItems:      'center',
-    justifyContent:  'center',
   },
   next: {
     flexDirection:     'row',
