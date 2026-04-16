@@ -1,20 +1,14 @@
-import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { useState, useCallback, useRef, useMemo, useDeferredValue } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { api, clearApiCache } from '@/api';
-import { colors } from '@/theme';
+import { colors, CATEGORY_GRADIENT, categoryColor } from '@/theme';
 import { useT } from '@/i18n';
-
-interface TodayData {
-  program?: { name: string; week: number; day: number };
-  workout?: { name: string; exercises: { name: string; sets: number; reps: string }[] };
-  habits: { id: number; name: string; completed: boolean }[];
-  mood?: number;
-  streak: number;
-}
+import { AvatarButton } from '../_avatar';
 
 interface Plan {
   id: number;
@@ -27,43 +21,43 @@ interface Plan {
   difficulty?: string;
 }
 
-const DIFFICULTY_COLOR: Record<string, string> = {
-  beginner:     '#4CAF50',  // green
-  intermediate: '#F59E0B',  // amber
-  advanced:     '#E94560',  // red
+const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
+  fire:   'flame',
+  arm:    'barbell',
+  bolt:   'flash',
+  leaf:   'leaf',
+  home:   'home',
+  swim:   'water',
+  flag:   'flag',
+  run:    'walk',
+  lift:   'fitness',
+  zap:    'flash',
+  flower: 'flower',
+  body:   'accessibility',
+  trophy: 'trophy',
+  shield: 'shield-checkmark',
 };
 
-const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
-  fire: 'flame-outline',
-  arm:  'barbell-outline',
-  bolt: 'flash-outline',
-  leaf: 'leaf-outline',
-  home: 'home-outline',
-  swim: 'water-outline',
-  flag: 'flag-outline',
-  run:  'walk-outline',
-  lift: 'fitness-outline',
-  zap:  'flash-outline',
-  flower: 'flower-outline',
-  body:   'accessibility-outline',
-  trophy: 'trophy-outline',
-  shield: 'shield-checkmark-outline',
+const DIFFICULTY_LABEL: Record<string, { en: string; de: string }> = {
+  beginner:     { en: 'Beginner',     de: 'Anfänger'        },
+  intermediate: { en: 'Intermediate', de: 'Mittel'          },
+  advanced:     { en: 'Advanced',     de: 'Fortgeschritten' },
 };
+
+const DEFAULT_GRADIENT: [string, string] = ['#6B7280', '#4B5563'];
 
 export default function HomeTab() {
   const router = useRouter();
-  const { tr } = useT();
-  const [data,       setData]       = useState<TodayData | null>(null);
+  const { trPlan, lang } = useT();
   const [plans,      setPlans]      = useState<Plan[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [search,     setSearch]     = useState('');
+  const [focused,    setFocused]    = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
   const fetchData = useCallback(async () => {
-    const [t, p] = await Promise.all([
-      api.tracking.today().catch(() => ({ habits: [], streak: 0 })),
-      api.plans.list().catch(() => []),
-    ]);
-    setData(t as TodayData);
+    const p = await api.plans.list().catch(() => []);
     const sorted = (p as Plan[]).slice().sort((a, b) => a.name.localeCompare(b.name));
     setPlans(sorted);
   }, []);
@@ -81,6 +75,19 @@ export default function HomeTab() {
 
   useFocusEffect(load);
 
+  // All hooks MUST be above any conditional return — React requires
+  // the same hook count on every render.
+  const deferredSearch = useDeferredValue(search);
+  const filtered = useMemo(() => {
+    const q = deferredSearch.toLowerCase().trim();
+    if (!q) return plans;
+    return plans.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      p.category.toLowerCase().includes(q) ||
+      (p.description || '').toLowerCase().includes(q)
+    );
+  }, [plans, deferredSearch]);
+
   if (loading) return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <View style={s.center}>
@@ -89,73 +96,120 @@ export default function HomeTab() {
     </SafeAreaView>
   );
 
-  const hasProgram = !!data?.workout;
-
   return (
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       <ScrollView
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />}
       >
 
-        {hasProgram ? (
-          <>
-            {/* Active program view */}
-            <Text style={s.headline}>
-              {tr('home_todays')}
-              <Text style={s.headlineAccent}>{tr('home_workout')}</Text>
-            </Text>
-            {data?.program && (
-              <Text style={s.sub}>
-                {data.program.name} · Week {data.program.week}, Day {data.program.day}
-              </Text>
+        {/* Title + avatar */}
+        <View style={s.titleRow}>
+          <Text style={s.title}>
+            {lang === 'de' ? 'Entdecken' : 'Discover'}
+          </Text>
+          <AvatarButton />
+        </View>
+
+        {/* Apple-style search bar — no border, filled, rounded pill */}
+        <View style={s.searchRow}>
+          <TouchableOpacity
+            style={s.searchBar}
+            activeOpacity={1}
+            onPress={() => inputRef.current?.focus()}
+          >
+            <Ionicons name="search" size={17} color="#98989F" />
+            <TextInput
+              ref={inputRef}
+              style={s.searchInput}
+              placeholder={lang === 'de'
+                ? 'Pläne, Kategorien und mehr'
+                : 'Plans, categories and more'}
+              placeholderTextColor="#98989F"
+              value={search}
+              onChangeText={setSearch}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+            />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')} hitSlop={12}>
+                <Ionicons name="close-circle" size={17} color="#98989F" />
+              </TouchableOpacity>
             )}
-
-            <Text style={s.workoutName}>{data?.workout?.name}</Text>
-
-            {data?.workout?.exercises.map((ex, i) => (
-              <View key={i} style={s.exRow}>
-                <Text style={s.exName}>{ex.name}</Text>
-                <Text style={s.exDetail}>{ex.sets} × {ex.reps}</Text>
-                <Ionicons name="chevron-forward" size={14} color={colors.border} />
-              </View>
-            ))}
-
-            <TouchableOpacity style={s.cta} onPress={() => router.push('/program')} activeOpacity={0.85}>
-              <Text style={s.ctaText}>{tr('home_view_prog')}</Text>
+          </TouchableOpacity>
+          {(focused || search.length > 0) && (
+            <TouchableOpacity
+              onPress={() => { setSearch(''); inputRef.current?.blur(); }}
+              hitSlop={10}
+            >
+              <Text style={s.cancelBtn}>
+                {lang === 'de' ? 'Abbrechen' : 'Cancel'}
+              </Text>
             </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            {/* No program — Ochy IMG_7774 style */}
-            <Text style={s.headline}>
-              {tr('home_headline_1')}
-              <Text style={s.headlineAccent}>{tr('home_headline_2')}</Text>
-              {tr('home_headline_3')}
-            </Text>
-            <Text style={s.sub}>{tr('home_choose_plan')}</Text>
+          )}
+        </View>
 
-            {/* Plan rows — full border colored by difficulty */}
-            <View style={s.planList}>
-              {plans.map(plan => {
-                const iconName = ICON_MAP[plan.icon] || 'barbell-outline';
-                const diffColor = DIFFICULTY_COLOR[(plan.difficulty || '').toLowerCase()] || colors.border;
-                return (
-                  <TouchableOpacity
-                    key={plan.id}
-                    style={[s.planRow, { borderColor: diffColor }]}
-                    activeOpacity={0.7}
-                    onPress={() => router.push(`/plan/${plan.id}` as any)}
-                  >
-                    <Ionicons name={iconName} size={20} color={diffColor} style={s.planRowIcon} />
-                    <Text style={s.planRowName} numberOfLines={2}>{plan.name}</Text>
-                    <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </>
+        {/* Section header */}
+        <View style={s.browseRow}>
+          <Text style={s.browseTitle}>
+            {lang === 'de' ? 'Alle Pläne' : 'Browse'}
+          </Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </View>
+
+        {/* Card grid — 2-column wrap, locked to 50% width each */}
+        <View style={s.grid}>
+          {filtered.map(plan => {
+            const gradient = CATEGORY_GRADIENT[plan.category] || DEFAULT_GRADIENT;
+            const iconName = ICON_MAP[plan.icon] || 'barbell';
+            const displayName = trPlan(plan.category, 'name', plan.name);
+            const diff = DIFFICULTY_LABEL[(plan.difficulty || '').toLowerCase()];
+            const diffLabel = diff ? (lang === 'de' ? diff.de : diff.en) : '';
+            return (
+              <TouchableOpacity
+                key={plan.id}
+                style={s.cardWrap}
+                activeOpacity={0.9}
+                onPress={() => router.push(`/plan/${plan.id}` as any)}
+              >
+                <LinearGradient
+                  colors={gradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={s.card}
+                >
+                  <View style={s.cardTop}>
+                    {diffLabel ? (
+                      <View style={s.diffPill}>
+                        <Text style={s.diffText}>{diffLabel}</Text>
+                      </View>
+                    ) : <View />}
+                    <Ionicons name={iconName} size={32} color="rgba(255,255,255,0.9)" />
+                  </View>
+                  <Text style={s.cardName} numberOfLines={2}>{displayName}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {filtered.length === 0 && (
+          <View style={s.emptyWrap}>
+            <Ionicons name="search-outline" size={40} color={colors.muted} style={{ opacity: 0.5 }} />
+            <Text style={s.emptyTitle}>
+              {lang === 'de' ? 'Nichts gefunden' : 'No results'}
+            </Text>
+            <Text style={s.emptySub}>
+              {lang === 'de'
+                ? 'Versuche einen anderen Suchbegriff'
+                : 'Try a different search term'}
+            </Text>
+          </View>
         )}
 
       </ScrollView>
@@ -166,32 +220,112 @@ export default function HomeTab() {
 const s = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: '#000' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: 28, paddingTop: 24, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40, overflow: 'hidden' },
 
-  // Headline — Ochy bold italic style
-  headline:       { fontSize: 26, fontWeight: '800', color: colors.text, lineHeight: 34, marginBottom: 10 },
-  headlineAccent: { color: colors.accent },
-  sub:            { fontSize: 15, color: colors.muted, marginBottom: 32 },
-
-  // Plan rows — full border colored by difficulty
-  planList:    { gap: 10 },
-  planRow:     {
-    flexDirection:   'row',
-    alignItems:      'center',
-    paddingVertical: 16,
-    paddingHorizontal: 14,
-    borderWidth:     1.5,
-    borderRadius:    12,
-    backgroundColor: '#0d0d0d',
+  // Title — large, bold, like Apple's "Search"
+  titleRow: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    justifyContent: 'space-between',
+    marginBottom:   14,
+    paddingLeft:    4,
   },
-  planRowIcon: { width: 28, marginRight: 14 },
-  planRowName: { flex: 1, fontSize: 16, color: colors.text, fontWeight: '500' },
+  title: {
+    fontSize:   34,
+    fontWeight: '800',
+    color:      colors.text,
+  },
 
-  // Active workout
-  workoutName: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 16 },
-  exRow:       { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#1a1a1a' },
-  exName:      { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500' },
-  exDetail:    { fontSize: 14, color: colors.muted, marginRight: 8 },
-  cta:         { backgroundColor: colors.cta, borderRadius: 14, paddingVertical: 17, alignItems: 'center', marginTop: 24 },
-  ctaText:     { fontSize: 17, fontWeight: '700', color: colors.ctaText },
+  // Search — Apple-style filled pill, no border
+  searchRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           12,
+    marginBottom:  24,
+  },
+  searchBar: {
+    flex:              1,
+    flexDirection:     'row',
+    alignItems:        'center',
+    backgroundColor:   '#1C1C1E',
+    borderRadius:      12,
+    paddingHorizontal: 12,
+    height:            40,
+    gap:               8,
+  },
+  searchInput: {
+    flex:            1,
+    fontSize:        16,
+    color:           colors.text,
+    padding:         0,
+    borderWidth:     0,
+    backgroundColor: 'transparent',
+    outlineStyle:    'none',
+  } as any,
+  cancelBtn: {
+    fontSize:   16,
+    fontWeight: '500',
+    color:      colors.accent,
+  },
+
+  // Browse header
+  browseRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           4,
+    marginBottom:  14,
+    paddingLeft:   4,
+  },
+  browseTitle: {
+    fontSize:   20,
+    fontWeight: '800',
+    color:      colors.text,
+  },
+
+  // Grid — 2-column wrap, each card locked to ~48% width
+  grid: {
+    flexDirection: 'row',
+    flexWrap:      'wrap',
+    gap:           10,
+  },
+  cardWrap: {
+    width:    '48.5%' as any,
+    overflow: 'hidden',
+  },
+  card: {
+    borderRadius:    18,
+    padding:         14,
+    minHeight:       140,
+    justifyContent:  'space-between',
+    overflow:        'hidden',
+  },
+  cardTop: {
+    flexDirection:  'row',
+    justifyContent: 'space-between',
+    alignItems:     'flex-start',
+  },
+  diffPill: {
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical:   3,
+    borderRadius:      8,
+  },
+  diffText: {
+    fontSize:   10,
+    fontWeight: '700',
+    color:      'rgba(255,255,255,0.9)',
+    letterSpacing: 0.5,
+  },
+  cardName: {
+    fontSize:   16,
+    fontWeight: '800',
+    color:      '#fff',
+    lineHeight: 21,
+    marginTop:  6,
+  },
+
+  // Empty state
+  emptyWrap:  { alignItems: 'center', gap: 8, marginTop: 48 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
+  emptySub:   { fontSize: 14, color: colors.muted },
 });

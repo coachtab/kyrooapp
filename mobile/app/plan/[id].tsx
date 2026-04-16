@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/api';
-import { colors } from '@/theme';
+import { colors, categoryColor } from '@/theme';
 import { useT } from '@/i18n';
 import { BackArrow, Tag } from '../_components';
 
@@ -38,11 +38,7 @@ const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = 
   shield: 'shield-checkmark-outline',
 };
 
-const DIFFICULTY_COLOR: Record<string, string> = {
-  beginner:     '#4CAF50',
-  intermediate: '#F59E0B',
-  advanced:     '#E94560',
-};
+// Imported from theme — each category gets its own color.
 
 export default function PlanDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -67,16 +63,24 @@ export default function PlanDetail() {
   if (!plan) return null;
 
   const iconName = ICON_MAP[plan.icon || ''] || 'barbell-outline';
-  const diffColor = DIFFICULTY_COLOR[(plan.difficulty || '').toLowerCase()] || colors.accent;
+  const diffColor = categoryColor(plan.category);
 
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-        {/* Back */}
-        <TouchableOpacity style={s.back} onPress={() => router.back()}>
-          <BackArrow />
-          <Text style={s.backText}>{tr('plans_accent')}</Text>
-        </TouchableOpacity>
+        {/* Header — title + close button */}
+        <View style={s.header}>
+          <Text style={s.headerTitle} numberOfLines={1}>
+            {trPlan(plan.category, 'name', plan.name)}
+          </Text>
+          <TouchableOpacity
+            style={[s.closeBtn, { borderColor: diffColor, backgroundColor: diffColor + '18' }]}
+            onPress={() => router.replace('/(tabs)')}
+            hitSlop={12}
+          >
+            <Ionicons name="close" size={20} color={diffColor} />
+          </TouchableOpacity>
+        </View>
 
         {/* Icon + tags — inline row, same icon size as home list */}
         <View style={s.tags}>
@@ -150,8 +154,30 @@ export default function PlanDetail() {
 const s = StyleSheet.create({
   safe:        { flex: 1, backgroundColor: colors.bg },
   scroll:      { padding: 20, paddingBottom: 48 },
-  back:        { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
-  backText:    { fontSize: 16, color: colors.text },
+  header: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    justifyContent: 'space-between',
+    marginBottom:   16,
+  },
+  headerTitle: {
+    flex:       1,
+    fontSize:   13,
+    fontWeight: '800',
+    color:      colors.muted,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  closeBtn: {
+    width:           36,
+    height:          36,
+    borderRadius:    18,
+    borderWidth:     1.5,
+    borderColor:     colors.border,
+    backgroundColor: '#0d0d0d',
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
 
   tags:        { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
   title:       { fontSize: 28, fontWeight: '800', color: colors.text, marginBottom: 10 },

@@ -5,7 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { api } from '@/api';
-import { colors } from '@/theme';
+import { colors, categoryColor } from '@/theme';
+import { useActionSheet } from '@/context/ActionSheetContext';
 import { useT } from '@/i18n';
 
 // ── BigSlider ───────────────────────────────────────────────────────────────
@@ -962,13 +963,9 @@ export default function Form() {
   const { planId, category, difficulty } = useLocalSearchParams<{ planId?: string; category?: string; difficulty?: string }>();
   const router  = useRouter();
   const { tr, lang } = useT();
+  const { confirm: confirmSheet } = useActionSheet();
 
-  const DIFFICULTY_COLOR: Record<string, string> = {
-    beginner:     '#4CAF50',
-    intermediate: '#F59E0B',
-    advanced:     '#E94560',
-  };
-  const diffColor = DIFFICULTY_COLOR[(difficulty || '').toLowerCase()] || colors.accent;
+  const diffColor = categoryColor(category);
 
   const byCategory = lang === 'de' ? DE : EN;
   const defaultSteps = lang === 'de' ? DE_DEFAULT : EN_DEFAULT;
@@ -1065,27 +1062,25 @@ export default function Form() {
         }
       }
       const q = await api.questionnaire.save({ ...payload, plan_id: planId ? Number(planId) : undefined });
-      router.replace({ pathname: '/generating', params: { questionnaireId: q.id, difficulty: difficulty || '' } });
+      router.replace({ pathname: '/generating', params: { questionnaireId: q.id, category: category || '' } });
     } catch {
       setLoading(false);
     }
   };
 
-  const cancel = () => {
-    const msg = lang === 'de'
-      ? 'Fortschritt verwerfen und zurück zur Startseite?'
-      : 'Discard progress and go back home?';
+  const cancel = async () => {
     const leave = () => router.replace('/(tabs)');
-    const hasAnswers = Object.keys(answers).length > 2; // height+weight defaults don't count
+    const hasAnswers = Object.keys(answers).length > 2;
     if (!hasAnswers) return leave();
-    if (Platform.OS === 'web') {
-      if (window.confirm(msg)) leave();
-    } else {
-      Alert.alert('', msg, [
-        { text: lang === 'de' ? 'Abbrechen' : 'Cancel', style: 'cancel' },
-        { text: lang === 'de' ? 'Verlassen' : 'Leave', style: 'destructive', onPress: leave },
-      ]);
-    }
+    const ok = await confirmSheet({
+      message: lang === 'de'
+        ? 'Fortschritt verwerfen und zurück zur Startseite?'
+        : 'Discard progress and go back home?',
+      confirmText: lang === 'de' ? 'Verlassen' : 'Leave',
+      cancelText: lang === 'de' ? 'Abbrechen' : 'Cancel',
+      destructive: true,
+    });
+    if (ok) leave();
   };
 
   return (

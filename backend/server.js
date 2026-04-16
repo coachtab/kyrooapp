@@ -787,6 +787,21 @@ app.get('/api/programs', auth, async (req, res) => {
   }
 });
 
+// Delete a program and all its days (CASCADE handles program_days)
+app.delete('/api/programs/:id', auth, async (req, res) => {
+  try {
+    const r = await pool.query(
+      'DELETE FROM programs WHERE id = $1 AND user_id = $2 RETURNING id',
+      [req.params.id, req.user.id]
+    );
+    if (!r.rows.length) return res.status(404).json({ error: 'Program not found' });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[delete program]', err.message);
+    res.status(500).json({ error: 'Failed to delete program' });
+  }
+});
+
 app.patch('/api/programs/:id/status', auth, async (req, res) => {
   const { status } = req.body;
   const valid = ['active', 'queued', 'paused', 'completed'];
@@ -841,8 +856,12 @@ app.patch('/api/programs/:id/vacation', auth, async (req, res) => {
   const clear = !start && !end;
   if (!clear) {
     const s = new Date(start), e = new Date(end);
+    const today = new Date(); today.setHours(0,0,0,0);
     if (isNaN(+s) || isNaN(+e) || e < s) {
       return res.status(400).json({ error: 'Invalid start/end dates' });
+    }
+    if (s < today) {
+      return res.status(400).json({ error: 'Break cannot start in the past' });
     }
   }
   try {

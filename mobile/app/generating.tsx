@@ -3,14 +3,8 @@ import { View, Text, StyleSheet, Animated, Platform, Easing } from 'react-native
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/api';
-import { colors } from '@/theme';
+import { colors, categoryColor } from '@/theme';
 import { useT } from '@/i18n';
-
-const DIFFICULTY_COLOR: Record<string, string> = {
-  beginner:     '#4CAF50',
-  intermediate: '#F59E0B',
-  advanced:     '#E94560',
-};
 
 const STEPS_EN = [
   { icon: 'person-outline',       label: 'Analysing your answers'  },
@@ -27,11 +21,11 @@ const STEPS_DE = [
 ] as const;
 
 export default function Generating() {
-  const { questionnaireId, difficulty } = useLocalSearchParams<{ questionnaireId: string; difficulty?: string }>();
+  const { questionnaireId, category } = useLocalSearchParams<{ questionnaireId: string; category?: string }>();
   const router = useRouter();
   const { lang } = useT();
 
-  const accent = DIFFICULTY_COLOR[(difficulty || '').toLowerCase()] || colors.accent;
+  const accent = categoryColor(category);
   const STEPS = lang === 'de' ? STEPS_DE : STEPS_EN;
 
   const [currentStep, setCurrentStep] = useState(0);

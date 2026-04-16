@@ -6,12 +6,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/api';
 import { colors } from '@/theme';
+import { useActionSheet } from '@/context/ActionSheetContext';
 import { useT } from '@/i18n';
 
 export default function PrivacyScreen() {
   const router = useRouter();
   const { logout } = useAuth();
   const { tr, lang } = useT();
+  const { confirm: confirmSheet } = useActionSheet();
 
   const [current,  setCurrent]  = useState('');
   const [next,     setNext]     = useState('');
@@ -57,16 +59,16 @@ export default function PrivacyScreen() {
     }
   }
 
-  function handleDeleteAccount() {
+  async function handleDeleteAccount() {
     if (deleteText.toUpperCase() !== CONFIRM_WORD) return;
-    if (Platform.OS === 'web') {
-      if (window.confirm(tr('psec_delete_msg'))) doDelete();
-    } else {
-      Alert.alert(tr('psec_delete'), tr('psec_delete_msg'), [
-        { text: tr('profile_cancel'), style: 'cancel' },
-        { text: tr('psec_delete'), style: 'destructive', onPress: doDelete },
-      ]);
-    }
+    const ok = await confirmSheet({
+      title: tr('psec_delete'),
+      message: tr('psec_delete_msg'),
+      confirmText: tr('psec_delete'),
+      cancelText: lang === 'de' ? 'Abbrechen' : 'Cancel',
+      destructive: true,
+    });
+    if (ok) doDelete();
   }
 
   const canDelete = deleteText.toUpperCase() === CONFIRM_WORD && !deleting;

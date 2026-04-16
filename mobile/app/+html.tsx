@@ -53,6 +53,25 @@ export default function Root({ children }: PropsWithChildren) {
           * { -webkit-user-select: none; user-select: none; }
           input, textarea, button, select { font-family: inherit; }
           input, textarea { -webkit-user-select: text; user-select: text; }
+          input, textarea, [contenteditable] {
+            outline: none !important;
+            box-shadow: none !important;
+            border-color: transparent !important;
+            -webkit-appearance: none;
+            appearance: none;
+          }
+          input:focus, textarea:focus, [contenteditable]:focus,
+          *:focus, *:focus-visible, *:focus-within {
+            outline: none !important;
+            box-shadow: none !important;
+          }
+          /* React Native Web wraps TextInput in a <div> that gets
+             an inline border on focus — override with !important */
+          div:focus, div:focus-visible {
+            outline: none !important;
+            border-color: inherit !important;
+          }
+          * { -webkit-tap-highlight-color: transparent; }
         `}} />
 
         {/* Register service worker */}

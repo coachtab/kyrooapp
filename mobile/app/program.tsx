@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Alert, Animated, PanResponder, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Animated, PanResponder, RefreshControl } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api, ProgramStatus, clearApiCache } from '@/api';
-import { colors } from '@/theme';
+import { colors, categoryColor } from '@/theme';
+import { useActionSheet } from '@/context/ActionSheetContext';
 import { useT } from '@/i18n';
 import { translateFocus, translateDayName, translateExercise, translateRest } from '@/i18n/programTranslations';
 
@@ -59,11 +60,7 @@ const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = 
   shield: 'shield-checkmark-outline',
 };
 
-const DIFFICULTY_COLOR: Record<string, string> = {
-  beginner:     '#4CAF50',
-  intermediate: '#F59E0B',
-  advanced:     '#E94560',
-};
+// Category color imported from theme — each plan has its own brand color.
 
 const STATUS_LABEL: Record<string, { en: string; de: string }> = {
   active:    { en: 'ACTIVE',    de: 'AKTIV'            },
@@ -76,6 +73,7 @@ export default function ProgramScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
   const { tr, lang } = useT();
+  const { confirm } = useActionSheet();
   const [program,    setProgram]    = useState<Program | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [updating,   setUpdating]   = useState(false);
@@ -117,14 +115,12 @@ export default function ProgramScreen() {
       finally { setUpdating(false); }
     };
     if (!confirmMsg) return doChange();
-    if (Platform.OS === 'web') {
-      if (window.confirm(confirmMsg)) doChange();
-    } else {
-      Alert.alert('', confirmMsg, [
-        { text: lang === 'de' ? 'Abbrechen' : 'Cancel', style: 'cancel' },
-        { text: 'OK', onPress: doChange },
-      ]);
-    }
+    const ok = await confirm({
+      message: confirmMsg,
+      confirmText: 'OK',
+      cancelText: lang === 'de' ? 'Abbrechen' : 'Cancel',
+    });
+    if (ok) doChange();
   };
 
   if (loading) return (
@@ -148,7 +144,7 @@ export default function ProgramScreen() {
 
   const iconName = ICON_MAP[program.icon || ''] || 'barbell-outline';
   const isCompleted = program.status === 'completed';
-  const baseColor = DIFFICULTY_COLOR[(program.difficulty || '').toLowerCase()] || colors.accent;
+  const baseColor = categoryColor(program.category);
   const diffColor = isCompleted ? '#4CAF50' : baseColor;
   const statusLabel = STATUS_LABEL[program.status]?.[lang] || program.status.toUpperCase();
   const progressPct = isCompleted ? 100 : Math.min(100, Math.round((program.week / program.weeks) * 100));
@@ -233,10 +229,10 @@ export default function ProgramScreen() {
           <Ionicons name={iconName} size={28} color={diffColor} style={{ marginRight: 12 }} />
           <TouchableOpacity
             onPress={() => router.replace('/(tabs)/plans' as any)}
-            style={s.closeBtn}
+            style={[s.closeBtn, { borderColor: diffColor, backgroundColor: diffColor + '18' }]}
             hitSlop={12}
           >
-            <Ionicons name="close" size={22} color={colors.text} />
+            <Ionicons name="close" size={22} color={diffColor} />
           </TouchableOpacity>
         </View>
 
@@ -447,15 +443,24 @@ export default function ProgramScreen() {
 
             {openDay === i && (
               <View style={s.exList}>
-                {day.exercises?.map((ex, j) => (
-                  <View key={j} style={[s.exRow, j < day.exercises.length - 1 && s.exBorder]}>
-                    <Text style={s.exName}>{translateExercise(ex.name, lang)}</Text>
-                    <View style={s.exRight}>
-                      <Text style={s.exSets}>{ex.sets} × {ex.reps}</Text>
-                      {ex.rest && <Text style={s.exRest}>{ex.rest} {translateRest(lang)}</Text>}
+                {day.exercises?.map((ex, j) => {
+                  const detail = `${ex.sets} × ${ex.reps}`;
+                  const isLong = detail.length > 18;
+                  return (
+                    <View key={j} style={[isLong ? s.exRowStack : s.exRow, j < day.exercises.length - 1 && s.exBorder]}>
+                      <Text style={s.exName}>{translateExercise(ex.name, lang)}</Text>
+                      {isLong ? (
+                        <Text style={s.exDetail}>{detail}</Text>
+                      ) : (
+                        <View style={s.exRight}>
+                          <Text style={s.exSets}>{detail}</Text>
+                          {ex.rest && <Text style={s.exRest}>{ex.rest} {translateRest(lang)}</Text>}
+                        </View>
+                      )}
+                      {isLong && ex.rest && <Text style={s.exRest}>{ex.rest} {translateRest(lang)}</Text>}
                     </View>
-                  </View>
-                ))}
+                  );
+                })}
                 {day.exercises?.length === 0 && (
                   <Text style={s.rest}>{tr('program_rest')}</Text>
                 )}
@@ -469,31 +474,133 @@ export default function ProgramScreen() {
   );
 }
 
-// ── Schedule + vacation card ──────────────────────────────────────────────
-const APP_FONT_STACK =
-  '"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+// ── Apple-style calendar picker ───────────────────────────────────────────
+function CalendarPicker({
+  value, onChange, min, color, lang,
+}: {
+  value: string;                // YYYY-MM-DD
+  onChange: (d: string) => void;
+  min?: string;
+  color: string;
+  lang: 'en' | 'de';
+}) {
+  const initial = value ? new Date(`${value}T00:00:00`) : new Date();
+  const [viewYear,  setViewYear]  = useState(initial.getFullYear());
+  const [viewMonth, setViewMonth] = useState(initial.getMonth());
 
-const DATE_INPUT_STYLE: any = {
-  boxSizing:       'border-box',
-  display:         'block',
-  width:           '100%',
-  maxWidth:        '100%',
-  minWidth:        0,
-  padding:         '14px',
-  fontSize:        '16px',
-  fontWeight:      500,
-  lineHeight:      '1.2',
-  color:           '#F5F5F5',
-  backgroundColor: '#141416',
-  border:          '1.5px solid #2A2A2E',
-  borderRadius:    '12px',
-  marginBottom:    '14px',
-  fontFamily:      APP_FONT_STACK,
-  colorScheme:     'dark',
-  outline:         'none',
-  WebkitAppearance:'none',
-  appearance:      'none',
-};
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const minStr   = min || todayStr;
+
+  const dayNames = lang === 'de'
+    ? ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+    : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+  const monthLabel = new Intl.DateTimeFormat(lang === 'de' ? 'de-DE' : 'en-US', { month: 'long', year: 'numeric' })
+    .format(new Date(viewYear, viewMonth, 1));
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+    else setViewMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+    else setViewMonth(m => m + 1);
+  };
+
+  // Build the day grid for the current view month
+  const firstDay = new Date(viewYear, viewMonth, 1);
+  const startOffset = lang === 'de'
+    ? (firstDay.getDay() + 6) % 7   // Mon=0
+    : firstDay.getDay();             // Sun=0
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const pad2 = (n: number) => String(n).padStart(2, '0');
+
+  return (
+    <View style={cp.wrap}>
+      {/* Month nav */}
+      <View style={cp.header}>
+        <TouchableOpacity onPress={prevMonth} hitSlop={12} style={cp.arrow}>
+          <Ionicons name="chevron-back" size={20} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={cp.monthLabel}>{monthLabel}</Text>
+        <TouchableOpacity onPress={nextMonth} hitSlop={12} style={cp.arrow}>
+          <Ionicons name="chevron-forward" size={20} color={colors.text} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Day-of-week header */}
+      <View style={cp.row}>
+        {dayNames.map((d, i) => (
+          <View key={i} style={cp.cell}>
+            <Text style={cp.dayName}>{d}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Day grid */}
+      {Array.from({ length: cells.length / 7 }, (_, w) => (
+        <View key={w} style={cp.row}>
+          {cells.slice(w * 7, w * 7 + 7).map((day, ci) => {
+            if (day === null) return <View key={ci} style={cp.cell} />;
+            const dateStr = `${viewYear}-${pad2(viewMonth + 1)}-${pad2(day)}`;
+            const isSelected = dateStr === value;
+            const isToday    = dateStr === todayStr;
+            const isPast     = dateStr < minStr;
+            return (
+              <View key={ci} style={cp.cell}>
+                <TouchableOpacity
+                  style={[
+                    cp.dayBtn,
+                    isSelected && { backgroundColor: color },
+                    isToday && !isSelected && { borderWidth: 1.5, borderColor: color },
+                  ]}
+                  onPress={() => !isPast && onChange(dateStr)}
+                  disabled={isPast}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    cp.dayText,
+                    isPast && { opacity: 0.3 },
+                    isSelected && { color: '#fff', fontWeight: '800' },
+                    isToday && !isSelected && { color },
+                  ]}>
+                    {day}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const cp = StyleSheet.create({
+  wrap:       { marginBottom: 14 },
+  header:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  arrow:      { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  monthLabel: { fontSize: 15, fontWeight: '700', color: colors.text },
+  row:        { flexDirection: 'row' },
+  cell:       { flex: 1, alignItems: 'center', paddingVertical: 4 },
+  dayName:    { fontSize: 11, fontWeight: '600', color: colors.muted, marginBottom: 6 },
+  dayBtn: {
+    width:          34,
+    height:         34,
+    borderRadius:   17,
+    alignItems:     'center',
+    justifyContent: 'center',
+  },
+  dayText: { fontSize: 14, fontWeight: '500', color: colors.text },
+});
+
+// ── Schedule + vacation card ──────────────────────────────────────────────
 
 interface ScheduleCardProps {
   program:   Program;
@@ -507,8 +614,9 @@ function ScheduleCard({ program, diffColor, lang, onUpdated }: ScheduleCardProps
   const [formOpen, setFormOpen] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const defaultEnd = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-  const [breakStart, setBreakStart] = useState(today);
-  const [breakEnd,   setBreakEnd]   = useState(defaultEnd);
+  const [breakStart,   setBreakStart]   = useState(today);
+  const [breakEnd,     setBreakEnd]     = useState(defaultEnd);
+  const [pickingField, setPickingField] = useState<'start' | 'end' | null>(null);
   const shortMap = lang === 'de' ? DAY_SHORT_DE : DAY_SHORT_EN;
 
   useEffect(() => { setLocalDays(program.training_days ?? []); }, [program.training_days]);
@@ -573,10 +681,11 @@ function ScheduleCard({ program, diffColor, lang, onUpdated }: ScheduleCardProps
   };
 
   const saveBreak = async () => {
-    if (!breakStart || !breakEnd || breakEnd < breakStart) {
+    const nowStr = new Date().toISOString().slice(0, 10);
+    if (!breakStart || !breakEnd || breakEnd < breakStart || breakStart < nowStr) {
       Alert.alert('', lang === 'de'
-        ? 'Das End-Datum muss nach dem Start-Datum liegen.'
-        : 'The end date must be after the start date.');
+        ? 'Bitte wähle ein gültiges Datum in der Zukunft.'
+        : 'Please pick a valid date in the future.');
       return;
     }
     setBusy(true);
@@ -685,35 +794,45 @@ function ScheduleCard({ program, diffColor, lang, onUpdated }: ScheduleCardProps
             </Text>
 
             <Text style={sched.modalLabel}>{lang === 'de' ? 'VON' : 'FROM'}</Text>
-            {Platform.OS === 'web' ? (
-              <input
-                type="date"
+            <TouchableOpacity
+              style={[sched.dateDisplay, { borderColor: diffColor + '60' }]}
+              onPress={() => setPickingField('start')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="calendar-outline" size={16} color={diffColor} />
+              <Text style={[sched.dateText, { color: diffColor }]}>
+                {new Intl.DateTimeFormat(lang === 'de' ? 'de-DE' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${breakStart}T00:00:00`))}
+              </Text>
+            </TouchableOpacity>
+            {pickingField === 'start' && (
+              <CalendarPicker
                 value={breakStart}
                 min={today}
-                aria-label={lang === 'de' ? 'Start-Datum' : 'Start date'}
-                title={lang === 'de' ? 'Start-Datum' : 'Start date'}
-                placeholder={lang === 'de' ? 'Start-Datum' : 'Start date'}
-                onChange={(e: any) => setBreakStart(e.target.value)}
-                style={DATE_INPUT_STYLE}
+                color={diffColor}
+                lang={lang}
+                onChange={d => { setBreakStart(d); if (d > breakEnd) setBreakEnd(d); setPickingField(null); }}
               />
-            ) : (
-              <Text style={sched.nativeNotice}>{breakStart}</Text>
             )}
 
             <Text style={sched.modalLabel}>{lang === 'de' ? 'BIS' : 'TO'}</Text>
-            {Platform.OS === 'web' ? (
-              <input
-                type="date"
+            <TouchableOpacity
+              style={[sched.dateDisplay, { borderColor: diffColor + '60' }]}
+              onPress={() => setPickingField('end')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="calendar-outline" size={16} color={diffColor} />
+              <Text style={[sched.dateText, { color: diffColor }]}>
+                {new Intl.DateTimeFormat(lang === 'de' ? 'de-DE' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${breakEnd}T00:00:00`))}
+              </Text>
+            </TouchableOpacity>
+            {pickingField === 'end' && (
+              <CalendarPicker
                 value={breakEnd}
                 min={breakStart}
-                aria-label={lang === 'de' ? 'End-Datum' : 'End date'}
-                title={lang === 'de' ? 'End-Datum' : 'End date'}
-                placeholder={lang === 'de' ? 'End-Datum' : 'End date'}
-                onChange={(e: any) => setBreakEnd(e.target.value)}
-                style={DATE_INPUT_STYLE}
+                color={diffColor}
+                lang={lang}
+                onChange={d => { setBreakEnd(d); setPickingField(null); }}
               />
-            ) : (
-              <Text style={sched.nativeNotice}>{breakEnd}</Text>
             )}
 
             <View style={sched.modalActions}>
@@ -833,16 +952,20 @@ const sched = StyleSheet.create({
     color:         colors.muted,
     marginBottom:  6,
   },
-  nativeNotice: {
-    fontSize:          15,
-    color:             colors.text,
+  dateDisplay: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               10,
     backgroundColor:   '#141416',
-    borderWidth:       1,
-    borderColor:       colors.border,
+    borderWidth:       1.5,
     borderRadius:      12,
     paddingHorizontal: 14,
     paddingVertical:   12,
-    marginBottom:      14,
+    marginBottom:      12,
+  },
+  dateText: {
+    fontSize:   15,
+    fontWeight: '600',
   },
   modalActions: {
     flexDirection: 'row',
@@ -997,17 +1120,19 @@ const s = StyleSheet.create({
 
   notesBox:        { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 6 },
   notesText:       { flex: 1, fontSize: 13, lineHeight: 19 },
-  dayCard:       { backgroundColor: '#0d0d0d', borderRadius: 14, marginBottom: 10, borderWidth: 1 },
+  dayCard:       { backgroundColor: '#0d0d0d', borderRadius: 14, marginBottom: 10, borderWidth: 1, overflow: 'hidden' },
   dayHeader:     { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
   dayNum:        { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
   dayNumText:    { fontSize: 14, fontWeight: '800' },
   dayName:       { fontSize: 15, fontWeight: '700', color: colors.text },
   dayFocus:      { fontSize: 12, color: colors.muted, marginTop: 2 },
-  exList:        { borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 14, paddingBottom: 8 },
-  exRow:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 10 },
+  exList:        { borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 14, paddingBottom: 8, overflow: 'hidden' },
+  exRow:         { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10, gap: 12 },
+  exRowStack:    { paddingVertical: 10 },
   exBorder:      { borderBottomWidth: 1, borderBottomColor: colors.border },
-  exName:        { fontSize: 14, color: colors.text, flex: 1 },
-  exRight:       { alignItems: 'flex-end' },
+  exName:        { fontSize: 14, color: colors.text, flex: 1, flexShrink: 1, minWidth: 0 },
+  exDetail:      { fontSize: 13, color: colors.muted, fontWeight: '600', marginTop: 4, lineHeight: 19 },
+  exRight:       { alignItems: 'flex-end', flexShrink: 0 },
   exSets:        { fontSize: 14, color: colors.muted, fontWeight: '600' },
   exRest:        { fontSize: 11, color: colors.muted, marginTop: 2 },
   rest:          { padding: 12, fontSize: 14, color: colors.muted, fontStyle: 'italic' },

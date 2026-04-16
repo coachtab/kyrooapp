@@ -10,6 +10,7 @@ import { api, clearApiCache } from '@/api';
 import { useAuth } from '@/context/AuthContext';
 import { colors } from '@/theme';
 import { useT } from '@/i18n';
+import { AvatarButton } from '../_avatar';
 
 interface Workout {
   name:      string;
@@ -218,6 +219,7 @@ export default function TrackingTab() {
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       <View style={s.header}>
         <Text style={s.title}>{lang === 'de' ? 'Tracking' : 'Track'}</Text>
+        <AvatarButton />
       </View>
 
       <ScrollView
@@ -492,7 +494,7 @@ const s = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: '#000' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  header: { paddingHorizontal: 28, paddingTop: 24, paddingBottom: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 28, paddingTop: 24, paddingBottom: 16 },
   title:  { fontSize: 28, fontWeight: '800', color: colors.text },
 
   scroll: { paddingHorizontal: 20, paddingBottom: 40 },

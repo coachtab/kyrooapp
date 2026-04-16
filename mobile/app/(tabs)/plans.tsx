@@ -1,12 +1,15 @@
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { api, clearApiCache } from '@/api';
-import { colors } from '@/theme';
+import { colors, categoryColor, CATEGORY_GRADIENT } from '@/theme';
+import { useActionSheet } from '@/context/ActionSheetContext';
 import { useT } from '@/i18n';
+import { AvatarButton } from '../_avatar';
 
 interface Program {
   id: number;
@@ -22,186 +25,30 @@ interface Program {
 }
 
 const ICON_MAP: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
-  fire: 'flame-outline',
-  arm:  'barbell-outline',
-  bolt: 'flash-outline',
-  leaf: 'leaf-outline',
-  home: 'home-outline',
-  swim: 'water-outline',
-  flag: 'flag-outline',
-  run:  'walk-outline',
-  lift: 'fitness-outline',
-  zap:  'flash-outline',
-  flower: 'flower-outline',
-  body:   'accessibility-outline',
-  trophy: 'trophy-outline',
-  shield: 'shield-checkmark-outline',
-};
-
-const DIFFICULTY_COLOR: Record<string, string> = {
-  beginner:     '#4CAF50',
-  intermediate: '#F59E0B',
-  advanced:     '#E94560',
+  fire:   'flame',
+  arm:    'barbell',
+  bolt:   'flash',
+  leaf:   'leaf',
+  home:   'home',
+  swim:   'water',
+  flag:   'flag',
+  run:    'walk',
+  lift:   'fitness',
+  zap:    'flash',
+  flower: 'flower',
+  body:   'accessibility',
+  trophy: 'trophy',
+  shield: 'shield-checkmark',
 };
 
 const STATUS_LABEL: Record<string, { en: string; de: string }> = {
-  active:    { en: 'ACTIVE',    de: 'AKTIV'            },
-  queued:    { en: 'QUEUED',    de: 'IN WARTESCHLANGE' },
-  paused:    { en: 'PAUSED',    de: 'PAUSIERT'         },
-  completed: { en: 'COMPLETED', de: 'ABGESCHLOSSEN'    },
+  active:    { en: 'ACTIVE',    de: 'AKTIV'          },
+  queued:    { en: 'QUEUED',    de: 'BEREIT'         },
+  paused:    { en: 'PAUSED',    de: 'PAUSIERT'       },
+  completed: { en: 'COMPLETED', de: 'ABGESCHLOSSEN'  },
 };
 
-// ── Program row — tap the card to open, tap the button to start/pause ─────
-function ProgramCard({
-  prog, diffColor, statusLabel, iconName, lang, onTap, onStatusChange,
-}: {
-  prog: Program;
-  diffColor: string;
-  statusLabel: string;
-  iconName: React.ComponentProps<typeof Ionicons>['name'];
-  lang: 'en' | 'de';
-  onTap: () => void;
-  onStatusChange: (status: 'active' | 'paused') => void;
-}) {
-  const isCompleted = prog.status === 'completed';
-  const canPause    = prog.status === 'active';
-
-  return (
-    <View style={cs.wrap}>
-      <TouchableOpacity
-        style={[
-          cs.card,
-          { borderColor: isCompleted ? '#4CAF50' + '80' : diffColor },
-          isCompleted && { backgroundColor: '#0a1a0e' },
-        ]}
-        activeOpacity={0.85}
-        onPress={onTap}
-      >
-        {isCompleted && (
-          <View style={cs.completedBadge}>
-            <Ionicons name="trophy" size={12} color="#fff" />
-            <Text style={cs.completedBadgeText}>{lang === 'de' ? 'GESCHAFFT' : 'DONE'}</Text>
-          </View>
-        )}
-
-        <View style={cs.head}>
-          <Ionicons name={isCompleted ? 'checkmark-circle' : iconName} size={22} color={isCompleted ? '#4CAF50' : diffColor} />
-          <Text style={[cs.name, isCompleted && cs.nameCompleted]} numberOfLines={1}>{prog.name}</Text>
-          {prog.ai_generated && !isCompleted && <Ionicons name="sparkles" size={14} color={diffColor} />}
-        </View>
-        <View style={cs.meta}>
-          <Text style={[cs.status, { color: isCompleted ? '#4CAF50' : diffColor }]}>{statusLabel}</Text>
-          <Text style={cs.dot}>·</Text>
-          <Text style={cs.weeks}>
-            {isCompleted
-              ? (lang === 'de' ? `${prog.total_weeks} Wochen abgeschlossen` : `${prog.total_weeks} weeks finished`)
-              : lang === 'de'
-                ? `Woche ${prog.current_week}/${prog.total_weeks}`
-                : `Week ${prog.current_week}/${prog.total_weeks}`}
-          </Text>
-        </View>
-        <View style={cs.track}>
-          <View style={[
-            cs.fill,
-            {
-              width: `${isCompleted ? 100 : Math.min(100, (prog.current_week / prog.total_weeks) * 100)}%` as any,
-              backgroundColor: isCompleted ? '#4CAF50' : diffColor,
-            },
-          ]} />
-        </View>
-
-        {!isCompleted && (
-          <View style={cs.actionRow}>
-            <TouchableOpacity
-              style={[cs.actionBtn, { backgroundColor: diffColor }]}
-              onPress={(e) => { e.stopPropagation?.(); onStatusChange(canPause ? 'paused' : 'active'); }}
-              activeOpacity={0.85}
-            >
-              <Ionicons name={canPause ? 'pause' : 'play'} size={14} color="#fff" />
-              <Text style={cs.actionBtnText}>
-                {canPause
-                  ? (lang === 'de' ? 'Pausieren' : 'Pause')
-                  : prog.status === 'paused'
-                    ? (lang === 'de' ? 'Fortsetzen' : 'Resume')
-                    : (lang === 'de' ? 'Starten' : 'Start')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={cs.openBtn}
-              onPress={(e) => { e.stopPropagation?.(); onTap(); }}
-              activeOpacity={0.75}
-            >
-              <Text style={[cs.openBtnText, { color: diffColor }]}>
-                {lang === 'de' ? 'Ansehen' : 'Open'}
-              </Text>
-              <Ionicons name="chevron-forward" size={14} color={diffColor} />
-            </TouchableOpacity>
-          </View>
-        )}
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-const cs = StyleSheet.create({
-  wrap:       { position: 'relative', marginBottom: 12 },
-  hint:       { position: 'absolute', top: 0, bottom: 0, width: 110, borderRadius: 14, alignItems: 'center', justifyContent: 'center', gap: 4 },
-  hintRight:  { right: 0 },
-  hintLeft:   { left: 0 },
-  hintText:   { fontSize: 12, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
-
-  card:       { backgroundColor: '#0d0d0d', borderRadius: 14, borderWidth: 1.5, padding: 16, gap: 10, overflow: 'hidden' },
-  head:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  name:       { flex: 1, fontSize: 16, fontWeight: '700', color: colors.text },
-  nameCompleted: { color: colors.muted, textDecorationLine: 'line-through' },
-
-  // Action buttons (primary start/pause + secondary open)
-  actionRow: {
-    flexDirection: 'row',
-    alignItems:    'center',
-    gap:           10,
-    marginTop:     4,
-  },
-  actionBtn: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    gap:               6,
-    paddingHorizontal: 14,
-    paddingVertical:   9,
-    borderRadius:      10,
-  },
-  actionBtnText: { fontSize: 13, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
-  openBtn: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    gap:               4,
-    paddingHorizontal: 10,
-    paddingVertical:   9,
-    marginLeft:        'auto',
-  },
-  openBtnText: { fontSize: 13, fontWeight: '700' },
-
-  // Completed ribbon — corner badge
-  completedBadge: {
-    position:        'absolute',
-    top:             0,
-    right:           0,
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 10,
-    paddingVertical:   5,
-    borderBottomLeftRadius: 10,
-    flexDirection:   'row',
-    alignItems:      'center',
-    gap:             4,
-  },
-  completedBadgeText: { fontSize: 10, fontWeight: '800', color: '#fff', letterSpacing: 1 },
-  meta:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  status:     { fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-  dot:        { fontSize: 12, color: colors.muted },
-  weeks:      { fontSize: 12, color: colors.muted },
-  track:      { height: 4, backgroundColor: '#1a1a1a', borderRadius: 2, overflow: 'hidden' },
-  fill:       { height: 4, borderRadius: 2 },
-});
+const DEFAULT_GRADIENT: [string, string] = ['#6B7280', '#4B5563'];
 
 export default function PlansTab() {
   const router = useRouter();
@@ -209,6 +56,7 @@ export default function PlansTab() {
   const [programs,   setPrograms]   = useState<Program[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { confirm } = useActionSheet();
 
   const fetchPrograms = useCallback(async () => {
     try {
@@ -239,6 +87,19 @@ export default function PlansTab() {
     } catch {}
   };
 
+  const handleDelete = async (progId: number, progName: string) => {
+    const ok = await confirm({
+      title: progName,
+      message: lang === 'de' ? 'Endgültig löschen?' : 'Delete permanently?',
+      confirmText: lang === 'de' ? 'Löschen' : 'Delete',
+      cancelText: lang === 'de' ? 'Abbrechen' : 'Cancel',
+      destructive: true,
+    });
+    if (ok) {
+      try { await api.programs.delete(progId); clearApiCache(); load(); } catch {}
+    }
+  };
+
   if (loading) return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <View style={s.center}>
@@ -249,60 +110,142 @@ export default function PlansTab() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
-      <View style={s.header}>
-        <Text style={s.title}>
-          {lang === 'de' ? 'Meine ' : 'My '}
-          <Text style={s.accent}>{lang === 'de' ? 'Pläne' : 'Plans'}</Text>
-        </Text>
-        <Text style={s.sub}>
-          {lang === 'de'
-            ? 'Tippe auf einen Plan, um ihn zu öffnen'
-            : 'Tap a plan to open it'}
-        </Text>
-      </View>
-
-      {programs.length === 0 ? (
-        <View style={s.emptyWrap}>
-          <View style={s.emptyCircle}>
-            <Ionicons name="barbell" size={72} color={colors.accent} />
-          </View>
-          <Text style={s.emptyIntro}>
-            {lang === 'de'
-              ? 'Du hast noch keinen Trainingsplan. Kyroo baut dir mit KI einen persönlichen Plan — basierend auf deinem Level, deiner Zeit und deinen Zielen.'
-              : "You don't have a training plan yet. Kyroo uses AI to build one tailored to your level, your time, and your goals."}
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />}
+      >
+        {/* Title */}
+        <View style={s.titleRow}>
+          <Text style={s.title}>
+            {lang === 'de' ? 'Meine Pläne' : 'My Plans'}
           </Text>
-          <Text style={s.emptyHeadline}>
-            {lang === 'de' ? 'Bereit, deinen ersten Plan zu erstellen?' : 'Ready to build your first plan?'}
-          </Text>
-          <TouchableOpacity style={s.startBtn} onPress={() => router.push('/(tabs)')} activeOpacity={0.85}>
-            <Text style={s.startBtnText}>{lang === 'de' ? 'Starten!' : 'Start!'}</Text>
-          </TouchableOpacity>
+          <AvatarButton />
         </View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={s.scroll}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />}
-        >
-          {programs.map(prog => {
-            const iconName = ICON_MAP[prog.icon || ''] || 'barbell-outline';
-            const diffColor = DIFFICULTY_COLOR[(prog.difficulty || '').toLowerCase()] || colors.accent;
-            const statusLabel = STATUS_LABEL[prog.status]?.[lang] || prog.status.toUpperCase();
+
+        {programs.length === 0 ? (
+          <View style={s.emptyWrap}>
+            <View style={s.emptyCircle}>
+              <Ionicons name="barbell" size={64} color={colors.accent} />
+            </View>
+            <Text style={s.emptyTitle}>
+              {lang === 'de' ? 'Noch keine Pläne' : 'No plans yet'}
+            </Text>
+            <Text style={s.emptySub}>
+              {lang === 'de'
+                ? 'Erstelle deinen ersten Plan und Kyroo baut dir mit KI ein persönliches Programm.'
+                : 'Create your first plan and Kyroo will build a personalised program with AI.'}
+            </Text>
+            <TouchableOpacity style={s.emptyBtn} onPress={() => router.push('/(tabs)')} activeOpacity={0.85}>
+              <Text style={s.emptyBtnText}>{lang === 'de' ? 'Plan erstellen' : 'Create a plan'}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          programs.map(prog => {
+            const cat       = (prog.category || '').toUpperCase();
+            const gradient  = CATEGORY_GRADIENT[cat] || DEFAULT_GRADIENT;
+            const iconName  = ICON_MAP[prog.icon || ''] || 'barbell';
+            const isComplete = prog.status === 'completed';
+            const canPause   = prog.status === 'active';
+            const statusText = STATUS_LABEL[prog.status]?.[lang] || prog.status.toUpperCase();
+            const progressPct = isComplete ? 100 : Math.min(100, Math.round((prog.current_week / prog.total_weeks) * 100));
+
             return (
-              <ProgramCard
+              <TouchableOpacity
                 key={prog.id}
-                prog={prog}
-                diffColor={diffColor}
-                statusLabel={statusLabel}
-                iconName={iconName}
-                lang={lang}
-                onTap={() => router.push({ pathname: '/program', params: { id: prog.id } } as any)}
-                onStatusChange={next => handleStatusChange(prog.id, next)}
-              />
+                activeOpacity={0.92}
+                onPress={() => router.push({ pathname: '/program', params: { id: prog.id } } as any)}
+              >
+                <LinearGradient
+                  colors={isComplete ? ['#1a3a1a', '#0d260d'] : gradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={s.card}
+                >
+                  {/* Top row — status pill + icon + delete */}
+                  <View style={s.cardTop}>
+                    <View style={s.statusPill}>
+                      <View style={[s.statusDot, { backgroundColor: isComplete ? '#4CAF50' : '#fff' }]} />
+                      <Text style={s.statusText}>{statusText}</Text>
+                    </View>
+                    <View style={s.cardTopRight}>
+                      <Ionicons
+                        name={isComplete ? 'checkmark-circle' : iconName}
+                        size={34}
+                        color="rgba(255,255,255,0.85)"
+                      />
+                      <TouchableOpacity
+                        style={s.deleteBtn}
+                        onPress={(e) => { e.stopPropagation?.(); handleDelete(prog.id, prog.name); }}
+                        hitSlop={8}
+                        activeOpacity={0.75}
+                      >
+                        <Ionicons name="close" size={14} color="rgba(255,255,255,0.9)" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Plan name */}
+                  <Text style={s.cardName} numberOfLines={2}>{prog.name}</Text>
+
+                  {/* Progress */}
+                  <View style={s.progressRow}>
+                    <Text style={s.progressLabel}>
+                      {isComplete
+                        ? (lang === 'de' ? 'Abgeschlossen' : 'Completed')
+                        : lang === 'de'
+                          ? `Woche ${prog.current_week} von ${prog.total_weeks}`
+                          : `Week ${prog.current_week} of ${prog.total_weeks}`}
+                    </Text>
+                    <Text style={s.progressPct}>{progressPct}%</Text>
+                  </View>
+                  <View style={s.track}>
+                    <View style={[s.fill, { width: `${progressPct}%` as any }]} />
+                  </View>
+
+                  {/* Action buttons */}
+                  {!isComplete && (
+                    <View style={s.actionRow}>
+                      <TouchableOpacity
+                        style={s.actionBtn}
+                        onPress={(e) => { e.stopPropagation?.(); handleStatusChange(prog.id, canPause ? 'paused' : 'active'); }}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name={canPause ? 'pause' : 'play'} size={14} color="#fff" />
+                        <Text style={s.actionBtnText}>
+                          {canPause
+                            ? (lang === 'de' ? 'Pausieren' : 'Pause')
+                            : prog.status === 'paused'
+                              ? (lang === 'de' ? 'Fortsetzen' : 'Resume')
+                              : (lang === 'de' ? 'Starten' : 'Start')}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={s.openBtn}
+                        onPress={(e) => { e.stopPropagation?.(); router.push({ pathname: '/program', params: { id: prog.id } } as any); }}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={s.openBtnText}>
+                          {lang === 'de' ? 'Öffnen' : 'Open'}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={14} color="#fff" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* Completed badge */}
+                  {isComplete && (
+                    <View style={s.doneBadge}>
+                      <Ionicons name="trophy" size={14} color="#4CAF50" />
+                      <Text style={s.doneBadgeText}>{lang === 'de' ? 'Geschafft!' : 'Done!'}</Text>
+                    </View>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
             );
-          })}
-        </ScrollView>
-      )}
+          })
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -310,29 +253,160 @@ export default function PlansTab() {
 const s = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: '#000' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
 
-  header: { paddingHorizontal: 28, paddingTop: 24, paddingBottom: 16 },
-  title:  { fontSize: 28, fontWeight: '800', color: colors.text },
-  accent: { color: colors.accent },
-  sub:    { fontSize: 14, color: colors.muted, marginTop: 6 },
+  titleRow: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    justifyContent: 'space-between',
+    marginBottom:   18,
+    paddingLeft:    4,
+  },
+  title: {
+    fontSize:   34,
+    fontWeight: '800',
+    color:      colors.text,
+  },
 
-  scroll: { paddingHorizontal: 20, paddingBottom: 40 },
+  // ── Gradient card — full width ─────────────────────────────
+  card: {
+    borderRadius:   18,
+    padding:        18,
+    marginBottom:   12,
+    overflow:       'hidden',
+  },
+  cardTop: {
+    flexDirection:  'row',
+    justifyContent: 'space-between',
+    alignItems:     'flex-start',
+    marginBottom:   12,
+  },
+  statusPill: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               6,
+    backgroundColor:   'rgba(0,0,0,0.25)',
+    paddingHorizontal: 10,
+    paddingVertical:   4,
+    borderRadius:      10,
+  },
+  statusDot:  { width: 6, height: 6, borderRadius: 3 },
+  statusText: { fontSize: 10, fontWeight: '800', color: '#fff', letterSpacing: 1 },
+  cardTopRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  deleteBtn: {
+    width:           28,
+    height:          28,
+    borderRadius:    14,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    borderWidth:     1,
+    borderColor:     'rgba(255,255,255,0.2)',
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+  cardName: {
+    fontSize:   20,
+    fontWeight: '800',
+    color:      '#fff',
+    lineHeight: 26,
+    marginBottom: 14,
+  },
 
-  // Empty state
-  emptyWrap:      { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, paddingBottom: 40 },
-  emptyCircle:    {
-    width:           140,
-    height:          140,
-    borderRadius:    70,
+  // Progress
+  progressRow: {
+    flexDirection:  'row',
+    justifyContent: 'space-between',
+    marginBottom:   6,
+  },
+  progressLabel: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.75)' },
+  progressPct:   { fontSize: 12, fontWeight: '800', color: '#fff' },
+  track: {
+    height:          5,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius:    3,
+    overflow:        'hidden',
+  },
+  fill: {
+    height:          5,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius:    3,
+  },
+
+  // Actions
+  actionRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           10,
+    marginTop:     14,
+  },
+  actionBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               6,
+    backgroundColor:   'rgba(0,0,0,0.3)',
+    paddingHorizontal: 16,
+    paddingVertical:   10,
+    borderRadius:      12,
+    borderWidth:       1,
+    borderColor:       'rgba(255,255,255,0.2)',
+  },
+  actionBtnText: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  openBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               4,
+    marginLeft:        'auto',
+    paddingHorizontal: 10,
+    paddingVertical:   10,
+  },
+  openBtnText: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
+
+  // Completed
+  doneBadge: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           6,
+    marginTop:     14,
+    alignSelf:     'flex-start',
+  },
+  doneBadgeText: { fontSize: 13, fontWeight: '800', color: '#4CAF50' },
+
+  // ── Empty state ────────────────────────────────────────────
+  emptyWrap: {
+    alignItems:       'center',
+    justifyContent:   'center',
+    paddingHorizontal: 24,
+    paddingTop:        60,
+  },
+  emptyCircle: {
+    width:           120,
+    height:          120,
+    borderRadius:    60,
     backgroundColor: colors.accent + '18',
     borderWidth:     2,
     borderColor:     colors.accent + '50',
     alignItems:      'center',
     justifyContent:  'center',
-    marginBottom:    32,
+    marginBottom:    28,
   },
-  emptyIntro:     { fontSize: 14, color: colors.muted, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
-  emptyHeadline:  { fontSize: 18, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 32, lineHeight: 26 },
-  startBtn:       { backgroundColor: colors.cta, borderRadius: 14, paddingVertical: 17, paddingHorizontal: 64, alignItems: 'center' },
-  startBtnText:   { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
+  emptyTitle: {
+    fontSize:     18,
+    fontWeight:   '800',
+    color:        colors.text,
+    marginBottom: 8,
+  },
+  emptySub: {
+    fontSize:     14,
+    color:        colors.muted,
+    textAlign:    'center',
+    lineHeight:   21,
+    marginBottom: 28,
+    maxWidth:     300,
+  },
+  emptyBtn: {
+    backgroundColor:   colors.cta,
+    borderRadius:      14,
+    paddingVertical:   16,
+    paddingHorizontal: 48,
+  },
+  emptyBtnText: { fontSize: 16, fontWeight: '800', color: '#fff' },
 });

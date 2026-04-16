@@ -108,6 +108,7 @@ export const api = {
     get:         (id: number)                              => req('GET',  `/api/programs/${id}`),
     list:        ()                                       => req('GET',   '/api/programs'),
     setStatus:   (id: number, status: ProgramStatus)     => req('PATCH', `/api/programs/${id}/status`, { status }),
+    delete:      (id: number)                               => req('DELETE', `/api/programs/${id}`),
     setSchedule: (id: number, training_days: string[])    => req('PATCH', `/api/programs/${id}/schedule`, { training_days }),
     setVacation: (id: number, start: string | null, end: string | null) => req('PATCH', `/api/programs/${id}/vacation`, { start, end }),
   },
