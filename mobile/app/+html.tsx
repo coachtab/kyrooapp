@@ -43,12 +43,19 @@ export default function Root({ children }: PropsWithChildren) {
         <style dangerouslySetInnerHTML={{ __html: `
           html, body {
             height: 100%;
+            overflow: hidden;
             overscroll-behavior: none;
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
-            touch-action: manipulation;
+            touch-action: pan-y;
             background-color: #0A0A0A;
             font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          }
+          #root {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
           }
           * { -webkit-user-select: none; user-select: none; }
           input, textarea, button, select { font-family: inherit; }

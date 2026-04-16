@@ -48,9 +48,9 @@ export default function SubscriptionScreen() {
   // Features comparison
   const features = [
     {
-      label: lang === 'de' ? 'KI-Trainingspläne' : 'AI training plans',
-      free: lang === 'de' ? '5 / Monat' : '5 / month',
-      pro: lang === 'de' ? 'Unbegrenzt' : 'Unlimited',
+      label: lang === 'de' ? 'KI-Pläne' : 'AI plans',
+      free: lang === 'de' ? '5/Mt' : '5/mo',
+      pro: '∞',
     },
     {
       label: lang === 'de' ? 'Ernährungsplan' : 'Nutrition plan',
@@ -83,16 +83,20 @@ export default function SubscriptionScreen() {
     <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} hitSlop={12}>
-          <Ionicons name="chevron-back" size={26} color={colors.text} />
-        </TouchableOpacity>
+        <View style={s.backBtn} />
         <Text style={s.headerTitle}>
           {lang === 'de' ? 'Abonnements' : 'Subscriptions'}
         </Text>
-        <View style={s.backBtn} />
+        <TouchableOpacity
+          onPress={() => router.replace('/(tabs)/profile' as any)}
+          style={s.closeBtn}
+          hitSlop={12}
+        >
+          <Ionicons name="close" size={20} color={colors.text} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} bounces={false} overScrollMode="never">
 
         {/* Status label */}
         <Text style={s.statusHeader}>
@@ -176,7 +180,7 @@ export default function SubscriptionScreen() {
 }
 
 const s = StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: '#000' },
+  safe:   { flex: 1, backgroundColor: '#000', overflow: 'hidden' },
 
   header: {
     flexDirection:     'row',
@@ -186,14 +190,22 @@ const s = StyleSheet.create({
     paddingTop:        8,
     paddingBottom:     12,
   },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  backBtn: { width: 36, height: 36 },
+  closeBtn: {
+    width:           36,
+    height:          36,
+    borderRadius:    18,
+    backgroundColor: '#2C2C2E',
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
   headerTitle: {
     fontSize:   16,
     fontWeight: '600',
     color:      colors.text,
   },
 
-  scroll: { paddingHorizontal: 20, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 20, paddingBottom: 40, overflow: 'hidden' },
 
   statusHeader: {
     fontSize:     13,
@@ -288,9 +300,9 @@ const s = StyleSheet.create({
     color:    colors.text,
   },
   featureCol: {
-    width:      60,
-    fontSize:   13,
-    fontWeight: '500',
+    width:      50,
+    fontSize:   14,
+    fontWeight: '600',
     color:      colors.muted,
     textAlign:  'center',
   },

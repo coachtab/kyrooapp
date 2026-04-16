@@ -220,7 +220,7 @@ export default function HomeTab() {
 const s = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: '#000' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40, overflow: 'hidden' },
+  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, overflow: 'hidden' },
 
   // Title — large, bold, like Apple's "Search"
   titleRow: {

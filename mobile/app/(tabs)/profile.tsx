@@ -296,7 +296,7 @@ const rs = StyleSheet.create({
 
 const s = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: '#000' },
-  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16 },
 
   title: {
     fontSize:     34,
@@ -384,10 +384,11 @@ const s = StyleSheet.create({
     marginLeft:       16,
   },
   neLabel: {
-    width:      70,
+    width:      90,
     fontSize:   15,
-    color:      colors.text,
+    color:      colors.muted,
     fontWeight: '400',
+    flexShrink: 0,
   },
   neInput: {
     flex:            1,
@@ -405,7 +406,7 @@ const s = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     gap:           10,
-    marginBottom:  20,
+    marginBottom:  14,
   },
   statCard: {
     flex:            1,
@@ -429,7 +430,7 @@ const s = StyleSheet.create({
   section: {
     backgroundColor: '#1C1C1E',
     borderRadius:    14,
-    marginBottom:    20,
+    marginBottom:    12,
     overflow:        'hidden',
   },
 
@@ -464,8 +465,8 @@ const s = StyleSheet.create({
     gap:             8,
     backgroundColor: '#1C1C1E',
     borderRadius:    14,
-    paddingVertical: 16,
-    marginTop:       4,
+    paddingVertical: 14,
+    marginTop:       2,
   },
   logoutText: {
     fontSize:   15,
@@ -473,5 +474,5 @@ const s = StyleSheet.create({
     color:      colors.accent,
   },
 
-  version: { fontSize: 11, color: colors.muted, marginTop: 20, textAlign: 'center' },
+  version: { fontSize: 11, color: colors.muted, marginTop: 10, textAlign: 'center' },
 });

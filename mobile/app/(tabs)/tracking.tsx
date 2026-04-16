@@ -497,7 +497,7 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 28, paddingTop: 24, paddingBottom: 16 },
   title:  { fontSize: 28, fontWeight: '800', color: colors.text },
 
-  scroll: { paddingHorizontal: 20, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 20, paddingBottom: 16 },
 
   sectionLabel: {
     fontSize:      11,

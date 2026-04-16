@@ -253,7 +253,7 @@ export default function PlansTab() {
 const s = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: '#000' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16 },
 
   titleRow: {
     flexDirection:  'row',

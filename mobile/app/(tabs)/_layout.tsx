@@ -19,27 +19,31 @@ function KyrooTabBar({ state, navigation }: any) {
   const { tr } = useT();
 
   return (
-    <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-      {TABS.map((tab, i) => {
-        const active = state.index === i;
-        return (
-          <TouchableOpacity
-            key={tab.name}
-            style={s.tab}
-            onPress={() => navigation.navigate(tab.name)}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={active ? tab.iconActive : tab.icon}
-              size={22}
-              color={active ? colors.accent : colors.muted}
-            />
-            <Text style={[s.label, active && s.labelActive]}>
-              {tr(tab.labelKey)}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+    <View style={[s.outer, { paddingBottom: Math.min(insets.bottom, 14) || 4 }]}>
+      <View style={s.pill}>
+        {TABS.map((tab, i) => {
+          const active = state.index === i;
+          return (
+            <TouchableOpacity
+              key={tab.name}
+              style={s.tab}
+              onPress={() => navigation.navigate(tab.name)}
+              activeOpacity={0.7}
+            >
+              <View style={[s.iconWrap, active && s.iconWrapActive]}>
+                <Ionicons
+                  name={active ? tab.iconActive : tab.icon}
+                  size={20}
+                  color={active ? colors.accent : '#8E8E93'}
+                />
+              </View>
+              <Text style={[s.label, active && s.labelActive]}>
+                {tr(tab.labelKey)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -56,8 +60,43 @@ export default function TabLayout() {
 }
 
 const s = StyleSheet.create({
-  bar:         { flexDirection: 'row', justifyContent: 'space-around', paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg },
-  tab:         { alignItems: 'center', gap: 3, paddingHorizontal: 12 },
-  label:       { fontSize: 10, fontWeight: '500', color: colors.muted },
-  labelActive: { color: colors.accent, fontWeight: '600' },
+  outer: {
+    backgroundColor:   '#000',
+    paddingHorizontal: 16,
+  },
+  pill: {
+    flexDirection:     'row',
+    justifyContent:    'space-around',
+    alignItems:        'center',
+    backgroundColor:   '#1C1C1E',
+    borderRadius:      28,
+    borderWidth:       1,
+    borderColor:       '#3A3A3C',
+    paddingVertical:   5,
+    paddingHorizontal: 6,
+  },
+  tab: {
+    flex:        1,
+    alignItems:  'center',
+    gap:         2,
+  },
+  iconWrap: {
+    width:          36,
+    height:         36,
+    borderRadius:   18,
+    alignItems:     'center',
+    justifyContent: 'center',
+  },
+  iconWrapActive: {
+    backgroundColor: '#3A3A3C',
+  },
+  label: {
+    fontSize:   9,
+    fontWeight: '500',
+    color:      '#8E8E93',
+  },
+  labelActive: {
+    color:      colors.accent,
+    fontWeight: '600',
+  },
 });
